@@ -23,7 +23,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { userId, teamId, documentIds, userSearchQuery, similarityScore, sequentialQuery, enhancedSearch } = req.body;
+    const { userId, teamId, documentIds, userSearchQuery, overallQuery, similarityScore, sequentialQuery, enhancedSearch } = req.body;
     const user =  await getUserBySession(session);
     
     if (!user || !teamId || !documentIds || !userSearchQuery) {
@@ -37,6 +37,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse) {
             teamId,
             documentIds,
             userSearchQuery,
+            overallQuery: overallQuery || 'Create a summary based on the following findings:',
             similarityScore: similarityScore || 1.0,
             sequentialQuery: sequentialQuery !== undefined ? sequentialQuery : true,
             enhancedSearch: enhancedSearch !== undefined ? enhancedSearch : false,

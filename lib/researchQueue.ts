@@ -42,7 +42,7 @@ export async function processResearchRequestQueue(teamId: string) {
         });
     }
 
-    const overallSummary = await createOpenAISummary(allFindings);
+    const overallSummary = await createOpenAISummary(allFindings, teamId, pendingRequest.overallQuery);
 
     await prisma.aIRequestQueue.update({
         where: { id },

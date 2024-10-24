@@ -4,7 +4,7 @@ import Card from '../shared/Card';
 import { useTranslation } from 'react-i18next';
 import { BsFileEarmarkText } from "react-icons/bs";
 import { IoCopyOutline } from "react-icons/io5";
-
+import ReactMarkdown from 'react-markdown';
 
 const getFileIcon = () => {
   return <BsFileEarmarkText className="text-4xl" />;
@@ -55,7 +55,7 @@ const IndividualFindings = ({ findings }) => {
               </button>
               </div>
             </div>
-            <p>{t(finding.content)}</p>
+            <p><ReactMarkdown>{t(finding.content)}</ReactMarkdown></p>
           </Card.Body>
         </Card>
       ))}

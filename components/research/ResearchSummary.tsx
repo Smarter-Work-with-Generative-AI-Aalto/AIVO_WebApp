@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import Card from '../shared/Card';
 import { useTranslation } from 'react-i18next';
 import { IoCopyOutline } from "react-icons/io5";
-
+import ReactMarkdown from 'react-markdown';
 
 const ResearchSummary = ({ summary, sources }) => {
     const { t } = useTranslation('common');
@@ -25,7 +25,7 @@ const ResearchSummary = ({ summary, sources }) => {
                     <div className="flex justify-between items-start">
                         <Card.Header>
                             <Card.Title>{t('overall-summary')}</Card.Title>
-                            <Card.Description><div className="text-m">{summary.summary}</div></Card.Description>
+                            <Card.Description><div className="text-m"><ReactMarkdown>{summary.summary}</ReactMarkdown></div></Card.Description>
                         </Card.Header>
                         <div className="tooltip" data-tip={tooltipText}>
                             <button

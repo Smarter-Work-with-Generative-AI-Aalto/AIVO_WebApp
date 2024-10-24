@@ -11,6 +11,7 @@ export const createAIRequestQueue = async (data: {
   teamId: string;
   documentIds: string[];
   userSearchQuery: string;
+  overallQuery: string;
   similarityScore?: number;
   sequentialQuery?: boolean;
   enhancedSearch?: boolean;

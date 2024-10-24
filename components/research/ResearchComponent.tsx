@@ -11,6 +11,7 @@ import { IoOpenOutline } from "react-icons/io5";
 import { Button } from 'react-daisyui';
 import SelectableDocumentTable from '../documentStore/SelectableDocumentTable';
 import toast from 'react-hot-toast';
+import ReactMarkdown from 'react-markdown';
 
 const ResearchComponent = ({ team }: { team: any }) => {
     const { t } = useTranslation('common');
@@ -19,6 +20,8 @@ const ResearchComponent = ({ team }: { team: any }) => {
     const [documents, setDocuments] = useState<any[]>([]);
     const [loading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [overallQuery, setOverallQuery] = useState('');
+    const [isCollapsed, setIsCollapsed] = useState(true);
     // const { data: session, status } = useSession(); // Hook from next-auth to get the session
     // const [userId, setUserId] = useState<string | null>(null);
 
@@ -119,7 +122,8 @@ const ResearchComponent = ({ team }: { team: any }) => {
                     teamId: team.id,
                     documentIds: selectedDocuments,
                     userSearchQuery: query,
-                    similarityScore: 0.8, // Example score
+                    overallQuery: overallQuery || 'Create a summary based on the following findings:',
+                    similarityScore: 0.8, 
                     sequentialQuery: true,
                     enhancedSearch: false,
                 }),
@@ -191,6 +195,30 @@ const ResearchComponent = ({ team }: { team: any }) => {
                     </div>
                 </Card.Body>
             </Card>
+            <h2 className="text-xl font-semibold mb-4">{t('research-step-three')}</h2>
+               <div className="mb-8">
+                   <button
+                       className="btn btn-secondary"
+                       onClick={() => setIsCollapsed(!isCollapsed)}
+                   >
+                       {isCollapsed ? t('expand') : t('collapse')}
+                   </button>
+                   {!isCollapsed && (
+                       <div className="mt-4">
+                           <label className="input input-bordered flex items-center gap-2">
+                               <input
+                                   name="overallQuery"
+                                   type="text"
+                                   className="grow"
+                                   placeholder="Create a summary based on the following findings:"
+                                   value={overallQuery}
+                                   onChange={(e) => setOverallQuery(e.target.value)}
+                               />
+                           </label>
+                       </div>
+                   )}
+               </div>
+
 
             <div className="mt-8">
                 <Button color="neutral" fullWidth onClick={handleSubmit} disabled={!query || selectedDocuments.length === 0}>

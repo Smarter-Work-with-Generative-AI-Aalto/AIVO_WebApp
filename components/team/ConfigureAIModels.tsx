@@ -114,6 +114,20 @@ const ConfigureAIModels = ({ team }) => {
         },
     });
 
+    const maskApiKey = (key: string) => {
+        if (key.length <= 4) return '****';
+        return '****' + key.slice(-4);
+    };
+
+    const [showKeys, setShowKeys] = useState<{ [key: string]: boolean }>({});
+
+    const toggleShowKey = (id: string) => {
+        setShowKeys((prev) => ({
+            ...prev,
+            [id]: !prev[id],
+        }));
+    };
+
     const providerSpecificFields = () => {
         switch (formik.values.provider) {
             case 'Azure OpenAI':
@@ -140,37 +154,67 @@ const ConfigureAIModels = ({ team }) => {
                             onChange={formik.handleChange}
                             error={formik.errors.azureOpenAIBasePath}
                         />
-                        <InputWithLabel
-                            name="azureOpenAIApiKey"
-                            label={t('azure-openai-api-key')}
-                            value={formik.values.azureOpenAIApiKey}
-                            onChange={formik.handleChange}
-                            error={formik.errors.azureOpenAIApiKey}
-                            required
-                        />
+                        <div className="relative">
+                            <InputWithLabel
+                                name="azureOpenAIApiKey"
+                                label={t('azure-openai-api-key')}
+                                type={showKeys['azure'] ? 'text' : 'password'}
+                                value={formik.values.azureOpenAIApiKey}
+                                onChange={formik.handleChange}
+                                error={formik.errors.azureOpenAIApiKey}
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={() => toggleShowKey('azure')}
+                                className="absolute right-3 top-9 text-gray-500 focus:outline-none"
+                            >
+                                {showKeys['azure'] ? 'Hide' : 'Show'}
+                            </button>
+                        </div>
                     </>
                 );
             case 'OpenAI':
                 return (
-                    <InputWithLabel
-                        name="openAIApiKey"
-                        label={t('openai-api-key')}
-                        value={formik.values.openAIApiKey}
-                        onChange={formik.handleChange}
-                        error={formik.errors.openAIApiKey}
-                        required
-                    />
+                    <div className="relative">
+                        <InputWithLabel
+                            name="openAIApiKey"
+                            label={t('openai-api-key')}
+                            type={showKeys['openai'] ? 'text' : 'password'}
+                            value={formik.values.openAIApiKey}
+                            onChange={formik.handleChange}
+                            error={formik.errors.openAIApiKey}
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={() => toggleShowKey('openai')}
+                            className="absolute right-3 top-9 text-gray-500 focus:outline-none"
+                        >
+                            {showKeys['openai'] ? 'Hide' : 'Show'}
+                        </button>
+                    </div>
                 );
             case 'Google Gemini':
                 return (
-                    <InputWithLabel
-                        name="googleAIApiKey"
-                        label={t('google-gemini-api-key')}
-                        value={formik.values.googleAIApiKey}
-                        onChange={formik.handleChange}
-                        error={formik.errors.googleAIApiKey}
-                        required
-                    />
+                    <div className="relative">
+                        <InputWithLabel
+                            name="googleAIApiKey"
+                            label={t('google-gemini-api-key')}
+                            type={showKeys['google'] ? 'text' : 'password'}
+                            value={formik.values.googleAIApiKey}
+                            onChange={formik.handleChange}
+                            error={formik.errors.googleAIApiKey}
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={() => toggleShowKey('google')}
+                            className="absolute right-3 top-9 text-gray-500 focus:outline-none"
+                        >
+                            {showKeys['google'] ? 'Hide' : 'Show'}
+                        </button>
+                    </div>
                 );
             default:
                 return null;
@@ -229,11 +273,29 @@ const ConfigureAIModels = ({ team }) => {
                 <h3 className="text-xl font-semibold">{t('existing-configurations')}</h3>
                 <ul className="list-disc ml-6">
                     {aiModels.map((config) => (
-                        <li key={config.id}>
-                            {config.provider} -
-                            {config.provider === 'Azure OpenAI' && config.azureOpenAIApiKey}
-                            {config.provider === 'OpenAI' && config.openAIApiKey}
-                            {config.provider === 'Google Gemini' && config.googleAIApiKey}
+                        <li key={config.id} className="flex items-center space-x-2">
+                            <span>{config.provider} - </span>
+                            <span>
+                                {config.provider === 'Azure OpenAI' && maskApiKey(config.azureOpenAIApiKey || '')}
+                                {config.provider === 'OpenAI' && maskApiKey(config.openAIApiKey || '')}
+                                {config.provider === 'Google Gemini' && maskApiKey(config.googleAIApiKey || '')}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    navigator.clipboard.writeText(
+                                        config.provider === 'Azure OpenAI'
+                                            ? config.azureOpenAIApiKey || ''
+                                            : config.provider === 'OpenAI'
+                                            ? config.openAIApiKey || ''
+                                            : config.googleAIApiKey || ''
+                                    );
+                                    toast.success(t('copied-to-clipboard'));
+                                }}
+                                className="text-blue-500 hover:underline"
+                            >
+                                {t('copy-to-clipboard')}
+                            </button>
                         </li>
                     ))}
                 </ul>

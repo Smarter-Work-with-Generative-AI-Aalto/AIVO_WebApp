@@ -287,9 +287,12 @@
   "deselect-all-documents": "Deselect All Documents",
   "research-step-one": "Step 1: Enter Research Question To Query",
   "research-step-two": "Step 2: Select Documents To Query",
+  "research-step-three": "Step 3: Enter Query for Overall Research Results",
   "previous": "Previous",
   "next": "Next",
   "select": "Select",
+  "expand": "Expand",
+  "collapse": "Collapse",
   "research-results": "Research Results",
   "no-results-found": "No results found",
   "individual-findings": "Individual Findings",
@@ -317,5 +320,4 @@
     },
     "view-results": "View Results"
   }
-  
 }

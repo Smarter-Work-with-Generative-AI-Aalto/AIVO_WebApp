@@ -42,16 +42,14 @@ const createRAGChain = async (query: string, contextDocs: any, teamId: string) =
     return response;
 };
 
-const createOpenAISummary = async (findings: any[], teamId) => {
+const createOpenAISummary = async (findings: any[], teamId: string, overallQuery: string) => {
     const teamOpenAIApiKey = await getOpenAIApiKeyForTeam(teamId);
     if (!teamOpenAIApiKey) {
         throw new Error(`OpenAI API key not found for team ID: ${teamId}`);
     }
-    console.log(findings);
-    const llm = new ChatOpenAI({ model: 'gpt-4o', temperature: 0, apiKey: teamOpenAIApiKey});
-    const summaryPrompt = `Create a summary based on the following findings: ${JSON.stringify(findings)}`;
-
-    const response = await llm.invoke(summaryPrompt);
+    const llm = new ChatOpenAI({ model: 'gpt-4o', temperature: 0, apiKey: teamOpenAIApiKey });
+    const summaryPrompt = overallQuery || 'Create a summary based on the following findings:';
+    const response = await llm.invoke(`${summaryPrompt} ${JSON.stringify(findings)}`);
     const summary = { summary: response.content };
     return summary;
 };

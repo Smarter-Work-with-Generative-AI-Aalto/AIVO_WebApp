@@ -280,6 +280,7 @@ model AIRequestQueue {
   teamId             String
   documentIds        String[] @default([])
   userSearchQuery    String
+  overallQuery       String   @default("Create a summary based on the following findings:")
   similarityScore    Float?   @default(1.0)
   sequentialQuery    Boolean  @default(true)
   enhancedSearch     Boolean  @default(false)
@@ -302,6 +303,7 @@ model AIActivityLog {
   teamId             String
   documentIds        String[]
   userSearchQuery    String
+  overallQuery       String   @default("Create a summary based on the following findings:")
   similarityScore    Float?
   sequentialQuery    Boolean
   enhancedSearch     Boolean
