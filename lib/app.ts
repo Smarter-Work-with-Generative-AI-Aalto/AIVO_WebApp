@@ -3,7 +3,7 @@ import env from './env';
 
 const app = {
   version: packageInfo.version,
-  name: 'QuantumData',
+  name: 'AIVO',
   logoUrl: '/logo.png',
   url: env.appUrl,
 };

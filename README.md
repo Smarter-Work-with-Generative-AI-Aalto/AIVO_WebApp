@@ -1,17 +1,17 @@
 <div align="center">
-    <img height="400px" alt="QuantumData Banner" src="assets/QuantumData_Banner.png">
+    <img height="400px" alt="AIVO Banner" src="assets/AIVO_Banner.png">
 </div>
 
-# QuantumData
+# AIVO
 
 <p>
-    <a href="https://github.com/ali-amaan/QuantumData/stargazers"><img src="https://img.shields.io/github/stars/ali-amaan/QuantumData" alt="Github stargazers"></a>
-    <a href="https://github.com/ali-amaan/QuantumData/issues"><img src="https://img.shields.io/github/issues/ali-amaan/QuantumData" alt="Github issues"></a>
-    <a href="https://github.com/ali-amaan/QuantumData/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ali-amaan/QuantumData" alt="license"></a>
+    <a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/QuantumData/stargazers"><img src="https://img.shields.io/github/stars/ali-amaan/QuantumData" alt="Github stargazers"></a>
+    <a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/QuantumData/issues"><img src="https://img.shields.io/github/issues/ali-amaan/QuantumData" alt="Github issues"></a>
+    <a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/QuantumData/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ali-amaan/QuantumData" alt="license"></a>
     <a href="https://www.linkedin.com/in/henri-schildt-57280"><img src="https://img.shields.io/badge/LinkedIn-blue" alt="LinkedIn"></a>
 </p>
 
-QuantumData is an AI-based qualitative research tool designed to help researchers efficiently find and extract relevant information from their custom documents store for a smooth and efficient qualitative research experience using generative AI.
+AIVO is an AI-based qualitative research tool designed to help researchers efficiently find and extract relevant information from their custom documents store for a smooth and efficient qualitative research experience using generative AI. We also enable innovate search operations like RAG, RFG, Batch Processing, Serialized Search, etc.
 
 >Please star ⭐ the repo if you want us to continue developing and improving the qualitative research tool! 😀
 
@@ -21,16 +21,20 @@ QuantumData is an AI-based qualitative research tool designed to help researcher
 - [x] Natural language processing to understand user queries
 - [x] Retrieval Augmented Generation (RAG) based extractions
 - [x] Supports multiple file formats (PDF, DOCX, TXT)
+- [x] Create Account
+- [x] Sign in with Email and Password
+- [x] User-friendly web interface
+- [x] Database integration
+- [x] Responsive UI
 
 ## ➡️ Coming Soon
-- [ ] Create Account
-- [ ] Sign in with Email and Password
-- [ ] User-friendly web interface
-- [ ] Database integration
+
 - [ ] Cloud Deployement Ready
 - [ ] Sign in with Google [Setting up Google OAuth]
-- [ ] Responsive UI
-- [ ] Comet Haley
+- [ ] Integration with AIVO Brain stand alone API
+- [ ] RFG Support
+- [ ] Saved Prompts with Efficient Matrix Search Operations
+- [ ] Stats Dashboard
 
 ## 🛠️ Built With
 
@@ -61,6 +65,12 @@ QuantumData is an AI-based qualitative research tool designed to help researcher
 
 [See & Interact with Figma Prototype](https://www.figma.com/proto/PvdjyWAPBUjxHYr5FXgK4Q/GPTCoding---QuantumData?page-id=0%3A1&node-id=1-50&viewport=1451%2C479%2C0.61&t=qwy4eiXgETIhcv0a-1&scaling=scale-down&starting-point-node-id=1%3A50) 
 
+## 📦 Architecture
+
+<div align="center">
+    <img height="600px" alt="AIVO Architecture" src="assets/AIVO_Architecture.png">
+</div>
+
 ## ✨ Getting Started
 
 Please follow these simple steps to get a local copy up and running.
@@ -80,13 +90,13 @@ Please follow these simple steps to get a local copy up and running.
 - Clone the repository by using this command:
 
 ```bash
-git clone https://github.com/<your_github_username>/saas-starter-kit.git
+git clone https://github.com/Smarter-Work-with-Generative-AI-Aalto/QuantumData.git
 ```
 
 #### 2. Go to the project folder
 
 ```bash
-cd saas-starter-kit
+cd AIVO
 ```
 
 #### 3. Install dependencies
@@ -156,8 +166,8 @@ See [Contributing Guide](CONTRIBUTING.md)
 
 ### Contributors
 
-<a href="https://github.com/ali-amaan/QuantumData/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ali-amaan/QuantumData" />
+<a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/QuantumData/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Smarter-Work-with-Generative-AI-Aalto/QuantumData" />
 </a>
 
 ### Steps For Contributing
@@ -171,8 +181,8 @@ We welcome contributions from the community! Here’s how you can help:
 2. **Clone your fork**
 
     ```bash
-    git clone https://github.com/your-username/QuantumData.git
-    cd QuantumData
+    git clone https://github.com/your-username/AIVO.git
+    cd AIVO
     ```
 
 3. **Create a new branch**

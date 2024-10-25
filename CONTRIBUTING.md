@@ -29,13 +29,13 @@ Please follow these simple steps to get a local copy up and running.
 
 1. **Fork the repository**
 
-    Click the [Fork](https://github.com/ali-amaan/QuantumData) button at the top-right corner of this repository.
+    Click the [Fork](https://github.com/Smarter-Work-with-Generative-AI-Aalto/AIVO) button at the top-right corner of this repository.
 
 2. **Clone your fork**
 
     ```bash
-    git clone https://github.com/your-username/QuantumData.git
-    cd QuantumData
+    git clone https://github.com/your-username/AIVO.git
+    cd AIVO
     ```
 
 3. **Create a new branch**
