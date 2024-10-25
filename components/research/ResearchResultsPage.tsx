@@ -11,6 +11,8 @@ import toast from 'react-hot-toast';
 // Define the shape of your results object
 interface ResearchResults {
     overallSummary: string;
+    overallQuery: string;
+    userSearchQuery: string;
     sources: any[]; // Adjust this to match the type of your sources if needed
     individualFindings: Array<{
         page: string;
@@ -36,7 +38,7 @@ const ResearchResultsPage = ({ resultId }: { resultId: string }) => {
                     toast.error('Failed to fetch results');
                 }
                 const data = await response.json();
-                console.log(data);
+                console.log("Result fetched successfully");
                 setResults(data);
             } catch (err) {
                 setError(String(err));
@@ -58,8 +60,8 @@ const ResearchResultsPage = ({ resultId }: { resultId: string }) => {
             {error && <Error message={error} />}
             {results && (
                 <>
-                    <ResearchSummary summary={results.overallSummary} sources={results.sources} />
-                    <IndividualFindings findings={results.individualFindings} />
+                    <ResearchSummary results = {results} />
+                    <IndividualFindings findings={results.individualFindings} userSearchQuery={results.userSearchQuery} />
                 </>
             )}
         </div>

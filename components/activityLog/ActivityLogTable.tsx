@@ -2,14 +2,16 @@
 import React from 'react';
 import { useTranslation } from 'next-i18next';
 import { Table } from '../shared/table/Table';
-import { ArrowRightIcon } from '@heroicons/react/24/outline';
+import { IoOpenOutline } from "react-icons/io5";
+import { TrashIcon } from '@heroicons/react/24/outline';
 
 interface ActivityLogTableProps {
     activities: any[];
     onViewResults: (id: string) => void;
+    onDelete: (id: string) => void;
 }
 
-const ActivityLogTable: React.FC<ActivityLogTableProps> = ({ activities, onViewResults }) => {
+const ActivityLogTable: React.FC<ActivityLogTableProps> = ({ activities, onViewResults, onDelete }) => {
     const { t } = useTranslation('common');
 
     const columns = [
@@ -26,17 +28,27 @@ const ActivityLogTable: React.FC<ActivityLogTableProps> = ({ activities, onViewR
                 id: activity.id, // Ensure unique key
                 cells: [
                     { text: new Date(activity.createdAt).toLocaleDateString() },
-                    { text: activity.userSearchQuery },
+                    {
+                        text: activity.userSearchQuery.length > 70
+                            ? `${activity.userSearchQuery.substring(0, 70)}...`
+                            : activity.userSearchQuery
+                    },
                     { text: activity.status },
                     {
                         element: (
-                            <button
-                                onClick={() => onViewResults(activity.id)}
-                                className="text-blue-500 flex items-center"
-                            >
-                                {t('view-results')}
-                                <ArrowRightIcon className="w-5 h-5 ml-2" />
-                            </button>
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={() => onViewResults(activity.id)}
+                                    className="text-blue-500 flex items-center"
+                                >
+                                    <IoOpenOutline className="w-5 h-5 ml-2" />
+                                </button>
+                                <button onClick={() => onDelete(activity.id)} 
+                                    className="text-red-500 flex items-center"
+                                >
+                                    <TrashIcon className="w-5 h-5" />
+                                </button>
+                            </div>
                         ),
                     },
                 ],

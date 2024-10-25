@@ -51,6 +51,7 @@
     "cookies-next": "4.2.1",
     "currency-symbol-map": "5.1.0",
     "d3-dsv": "^2.0.0",
+    "file-saver": "^2.0.5",
     "formidable": "^3.5.1",
     "formik": "2.4.6",
     "i18next": "23.11.5",
@@ -79,6 +80,7 @@
     "stripe": "15.12.0",
     "svix": "1.24.0",
     "swr": "2.2.5",
+    "xlsx": "^0.18.5",
     "yup": "1.4.0",
     "zod": "3.23.8"
   },

@@ -251,7 +251,7 @@
   "documentStore": {
     "title": "Document Store",
     "uploadButton": "Upload Research File",
-    "uploadPrompt": "Choose a file or drag and drop it here",
+    "uploadPrompt": "Choose a file or drag and drop it here. Only pdf files under 10MB are supported.",
     "table": {
       "id": "ID",
       "title": "Title",

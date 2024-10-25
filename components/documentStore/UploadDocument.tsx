@@ -11,16 +11,17 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ handleFileUpload }) => 
     const { t } = useTranslation('common');
 
     return (
-        <Card>
+
+        <div className="card w-full border-none border-rounded dark:bg-black dark:border-gray-600">
             <Card.Body>
-                <div className="border-2 border-dashed border-gray-300 p-4 mb-4 text-center">
-                    <input 
-                        type="file" 
-                        className="hidden" 
-                        id="fileUpload" 
-                        accept=".pdf,.docx,.pptx,.txt,.json,.csv" 
-                        multiple 
-                        onChange={handleFileUpload} 
+                <div className="border-2 border-dashed border-gray-300 p-4 mb-4 text-center rounded-lg">
+                    <input
+                        type="file"
+                        className="hidden"
+                        id="fileUpload"
+                        accept=".pdf"
+                        multiple
+                        onChange={handleFileUpload}
                     />
                     <label htmlFor="fileUpload" className="cursor-pointer">
                         <div className="flex flex-col items-center justify-center h-full">
@@ -28,10 +29,11 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ handleFileUpload }) => 
                             <span className="mt-2 block text-sm font-medium text-gray-600">{t('documentStore.uploadPrompt')}</span>
                         </div>
                     </label>
-                    <button className="btn btn-neutral mt-4 w-full">{t('documentStore.uploadButton')}</button>
+                    <button className="btn btn-neutral mt-4 w-full rounded-full">{t('documentStore.uploadButton')}</button>
                 </div>
             </Card.Body>
-        </Card>
+        </div>
+
     );
 };
 

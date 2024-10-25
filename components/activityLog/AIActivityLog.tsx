@@ -41,6 +41,32 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ teamId, teamSlug }) => {  // 
         fetchActivities();
     }, [teamId]);
 
+    const handleDeleteActivity = async (id: string) => {
+        try {
+            const response = await fetch(`/api/ai-activity-log`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to delete activity');
+            }
+
+            setActivities((prevActivities) => 
+                prevActivities.filter((activity) => activity.id !== id)
+            );
+            toast.success(t('activity-deleted-successfully'));
+        } catch (error) {
+            console.error('Error deleting activity:', error);
+            toast.error(t('failed-to-delete-activity'));
+            setError(error instanceof Error ? error.message : 'Failed to delete activity');
+        }
+    };
+
     const handleViewResults = (activityId: string) => {
         // Use teamSlug for the redirection
         window.location.href = `/teams/${teamSlug}/ai-result?id=${activityId}`;
@@ -48,19 +74,27 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ teamId, teamSlug }) => {  // 
 
     return (
         <div className="flex flex-col pb-6">
-            <h2 className="text-xl font-semibold mb-2">{t('activityLog.title')}</h2>
+            <h2 className="text-xl font-semibold mb-2 text-center">
+                {t('activityLog.title')}
+            </h2>
             {error && <Error message={error} />}
-            <Card className="mt-6">
-                <Card.Body>
-                    {isLoading ? (
-                        <Loading />
-                    ) : activities.length === 0 ? (
-                        <p>{t('activityLog.noActivities')}</p>
-                    ) : (
-                        <ActivityLogTable activities={activities} onViewResults={handleViewResults} />
-                    )}
-                </Card.Body>
-            </Card>
+            <div className="mt-6">
+                <Card>
+                    <Card.Body>
+                        {isLoading ? (
+                            <Loading />
+                        ) : activities.length === 0 ? (
+                            <p>{t('activityLog.noActivities')}</p>
+                        ) : (
+                            <ActivityLogTable 
+                                activities={activities} 
+                                onViewResults={handleViewResults} 
+                                onDelete={handleDeleteActivity} 
+                            />
+                        )}
+                    </Card.Body>
+                </Card>
+            </div>
         </div>
     );
 };

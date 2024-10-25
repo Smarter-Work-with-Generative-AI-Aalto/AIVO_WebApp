@@ -29,12 +29,11 @@ const DocumentStore = ({ team }: { team: any }) => {
                     data.map((doc: any) => ({
                         id: doc.id,
                         cells: [
-                            { text: doc.id },
-                            { text: doc.title },
-                            { text: doc.status },
                             { text: new Date(doc.createdAt).toLocaleDateString() },
+                            { text: doc.title.length > 100 ? `${doc.title.substring(0, 70)}...` : doc.title },
+                            { text: doc.status },
                         ],
-                        fileUrl: doc.content, 
+                        fileUrl: doc.content,
                     }))
                 );
                 setError(null);
@@ -56,7 +55,7 @@ const DocumentStore = ({ team }: { team: any }) => {
             setError(`You can only upload a maximum of ${MAX_FILES} files at a time.`);
             return;
         }
-        
+
         if (!files) return;
 
         for (const file of files) {
@@ -92,10 +91,9 @@ const DocumentStore = ({ team }: { team: any }) => {
                 ...data.map((doc: any) => ({
                     id: doc.id,
                     cells: [
-                        { text: doc.id },
-                        { text: doc.title },
-                        { text: doc.status },
                         { text: new Date(doc.createdAt).toLocaleDateString() },
+                        { text: doc.title.length > 70 ? `${doc.title.substring(0, 70)}...` : doc.title },
+                        { text: doc.status },
                     ],
                     fileUrl: doc.content,
                 })),
@@ -145,7 +143,7 @@ const DocumentStore = ({ team }: { team: any }) => {
 
     return (
         <div className="flex flex-col pb-6">
-            <h2 className="text-xl font-semibold mb-2">
+            <h2 className="text-xl font-semibold mb-2 text-center">
                 {t('documentStore.title')}
             </h2>
             {error && <Error message={error} />}
@@ -157,8 +155,8 @@ const DocumentStore = ({ team }: { team: any }) => {
                     ) : documents.length === 0 ? (
                         <p>{t('documentStore.noDocuments')}</p>
                     ) : (
-                        <DocumentTable 
-                            documents={documents} 
+                        <DocumentTable
+                            documents={documents}
                             onDelete={handleDeleteDocument}
                             onDownload={handleDownloadDocument}
                         />

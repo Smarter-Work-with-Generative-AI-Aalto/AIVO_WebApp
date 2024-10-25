@@ -15,10 +15,9 @@ const DocumentTable: React.FC<DocumentTableProps> = ({ documents, onDelete, onDo
   const { t } = useTranslation('common');
 
   const columns = [
-    t('documentStore.table.id'),
+    t('documentStore.table.uploadDate'),
     t('documentStore.table.title'),
     t('documentStore.table.status'),
-    t('documentStore.table.uploadDate'),
     'Actions'
   ];
 

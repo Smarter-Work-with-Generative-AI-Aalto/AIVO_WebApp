@@ -81,7 +81,7 @@ async function handleDocumentSearch(documentChunks: { content: string, metadata:
             const finding = {
                 title: extractMetadataValue(chunk.metadata.attributes, 'title') || 'Untitled Document',
                 page: extractMetadataValue(chunk.metadata.attributes, 'pageNumber') || 'N/A',
-                // pageContent: chunk.content,
+                pageContent: chunk.content,
                 content: result.content,
             };
             console.log(finding);

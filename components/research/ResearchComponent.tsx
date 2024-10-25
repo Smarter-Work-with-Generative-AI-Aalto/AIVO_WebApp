@@ -58,7 +58,7 @@ const ResearchComponent = ({ team }: { team: any }) => {
     //         }
     //       }
     //     };
-    
+
     //     fetchUserId();
     //   }, [session, status]);
 
@@ -123,7 +123,7 @@ const ResearchComponent = ({ team }: { team: any }) => {
                     documentIds: selectedDocuments,
                     userSearchQuery: query,
                     overallQuery: overallQuery || 'Create a summary based on the following findings:',
-                    similarityScore: 0.8, 
+                    similarityScore: 0.8,
                     sequentialQuery: true,
                     enhancedSearch: false,
                 }),
@@ -138,7 +138,7 @@ const ResearchComponent = ({ team }: { team: any }) => {
 
             // Redirect to activity log after successful submission
             window.location.href = `/teams/${team.slug}/activity-log`;
-            
+
         } catch (err) {
             setError(String(err));
         } finally {
@@ -149,99 +149,101 @@ const ResearchComponent = ({ team }: { team: any }) => {
     const visibleDocuments = documents.slice(0, 5);
 
     return (
-        <div className="p-4">
-            <h2 className="text-xl font-semibold mb-4">{t('research-step-one')}</h2>
-            <div className="mb-8">
-                <label className="input input-bordered flex items-center gap-2">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 16 16"
-                        fill="currentColor"
-                        className="h-4 w-4 opacity-70">
-                        <path
-                            fillRule="evenodd"
-                            d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-                            clipRule="evenodd" />
-                    </svg>
-                    <input name="search" type="text" className="grow" placeholder="Search..." onChange={(e) => setQuery(e.target.value)} />
-                </label>
-            </div>
-            <h2 className="text-xl font-semibold mb-4">{t('research-step-two')}</h2>
-            <Card>
-                <Card.Body>
-                    <div className="flex gap-2 overflow-x-auto pb-4">
-                        {visibleDocuments.map((doc) => (
+        <div className="flex flex-col pb-6">
+            <h2 className="text-xl font-semibold mb-2 text-center">
+                {t('AI Research')}
+            </h2>
+            <div className="p-4">
+                <div className="card w-full border-rounded bg-neutral-100 mb-4 mt-4">
+                    <Card.Body>
+                        <h2 className="text-xl font-semibold">{t('research-step-one')}</h2>
+                        <div>
+                            <label className="input input-bordered flex items-center gap-2 rounded-full">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 16 16"
+                                    fill="currentColor"
+                                    className="h-4 w-4 opacity-70">
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
+                                        clipRule="evenodd" />
+                                </svg>
+                                <input name="search" type="text" className="grow" placeholder="Search..." onChange={(e) => setQuery(e.target.value)} />
+                            </label>
+                        </div>
+                    </Card.Body>
+                </div>
+                <div className="card w-full border-rounded bg-neutral-100 mb-4 mt-4">
+                    <Card.Body>
+                        <h2 className="text-xl font-semibold">{t('research-step-two')}</h2>
+                        <div className="flex gap-2 overflow-x-auto pb-4">
+                            {visibleDocuments.map((doc) => (
+                                <button
+                                    key={doc.id}
+                                    onClick={() => handleDocumentSelect(doc.id)}
+                                    className={`border rounded p-2 flex items-center gap-2 ${selectedDocuments.includes(doc.id) ? 'bg-gray-200' : 'border-gray-300'}`}
+                                >
+                                    {getFileIcon(doc.type)}
+                                    <span className="block text-center text-xs">{truncateFileName(doc.title)}</span>
+                                </button>
+                            ))}
                             <button
-                                key={doc.id}
-                                onClick={() => handleDocumentSelect(doc.id)}
-                                className={`border rounded p-2 flex items-center gap-2 ${selectedDocuments.includes(doc.id) ? 'bg-gray-200' : 'border-gray-300'}`}
+                                className="border rounded p-2 flex items-center gap-2"
+                                onClick={() => document.getElementById('document_modal')?.showModal()}
                             >
-                                {getFileIcon(doc.type)}
-                                <span className="block text-center text-xs">{truncateFileName(doc.title)}</span>
+                                <IoOpenOutline className="text-4xl" />
+                                <span className="block text-center text-xs font-bold">{t('view-more')}</span>
                             </button>
-                        ))}
-                        <button
-                            className="border rounded p-2 flex items-center gap-2"
-                            onClick={() => document.getElementById('document_modal')?.showModal()}
-                        >
-                            <IoOpenOutline className="text-4xl" />
-                            <span className="block text-center text-xs font-bold">{t('view-more')}</span>
-                        </button>
-                    </div>
-                    <div className="flex justify-center">
-                        <Button className="btn btn-secondary btn-sm btn-block" onClick={handleSelectAllDocuments}>
-                            {selectedDocuments.length === documents.length ? t('deselect-all-documents') : t('search-all-documents')}
-                        </Button>
-                    </div>
-                </Card.Body>
-            </Card>
-            <h2 className="text-xl font-semibold mb-4">{t('research-step-three')}</h2>
-               <div className="mb-8">
-                   <button
-                       className="btn btn-secondary"
-                       onClick={() => setIsCollapsed(!isCollapsed)}
-                   >
-                       {isCollapsed ? t('expand') : t('collapse')}
-                   </button>
-                   {!isCollapsed && (
-                       <div className="mt-4">
-                           <label className="input input-bordered flex items-center gap-2">
-                               <input
-                                   name="overallQuery"
-                                   type="text"
-                                   className="grow"
-                                   placeholder="Create a summary based on the following findings:"
-                                   value={overallQuery}
-                                   onChange={(e) => setOverallQuery(e.target.value)}
-                               />
-                           </label>
-                       </div>
-                   )}
-               </div>
-
-
-            <div className="mt-8">
-                <Button color="neutral" fullWidth onClick={handleSubmit} disabled={!query || selectedDocuments.length === 0}>
-                    {t('research')}
-                </Button>
-            </div>
-            
-            {loading && <Loading />}
-            {error && <Error message={error} />}
-
-            <dialog id="document_modal" className="modal modal-bottom sm:modal-middle">
-                <div className="modal-box w-11/12 max-w-5xl">
-                    <h3 className="font-bold text-lg">{t('select-documents')}</h3>
-                    <SelectableDocumentTable
-                        documents={documents}
-                        selectedDocuments={selectedDocuments}
-                        onSelect={handleDocumentSelect}
-                    />
-                    <div className="modal-action">
-                        <button className="btn btn-sm" onClick={() => handleSelectInModal(selectedDocuments)}>{t('select')}</button>
+                        </div>
+                        <div className="flex justify-center">
+                            <Button className="btn btn-secondary btn-sm btn-block rounded-full" onClick={handleSelectAllDocuments}>
+                                {selectedDocuments.length === documents.length ? t('deselect-all-documents') : t('search-all-documents')}
+                            </Button>
+                        </div>
+                    </Card.Body>
+                </div>
+                <div tabIndex={0} className="collapse collapse-arrow bg-neutral-100 mb-2 mt-4">
+                    <div className="collapse-title badge-neutral-100 text-sm font-medium">{t('Optional Settings')}</div>
+                    <div className="collapse-content">
+                        <h2 className="text-xl font-semibold mb-2 mt-4">{t('research-step-three')}</h2>
+                        <label className="input input-bordered flex items-center gap-2 rounded-full">
+                            <input
+                                name="overallQuery"
+                                type="text"
+                                className="grow"
+                                placeholder="Write a summary based on the following findings"
+                                value={overallQuery}
+                                onChange={(e) => setOverallQuery(e.target.value)}
+                            />
+                        </label>
                     </div>
                 </div>
-            </dialog>
+
+                <div className="mt-8">
+                    <Button color="neutral" className="transition ease-in-out bg-neutral-500 hover:-translate-y-1 hover:scale-110 hover:bg-neutral-950 duration-300 rounded-full shadow-xl border-none" fullWidth onClick={handleSubmit} disabled={!query || selectedDocuments.length === 0}>
+                        {t('research')}
+                    </Button>
+                </div>
+
+                {loading && <Loading />}
+                {error && <Error message={error} />}
+
+                <dialog id="document_modal" className="modal modal-bottom sm:modal-middle">
+                    <div className="modal-box w-11/12 max-w-5xl">
+                        <h3 className="font-bold text-lg">{t('select-documents')}</h3>
+                        <SelectableDocumentTable
+                            documents={documents}
+                            selectedDocuments={selectedDocuments}
+                            onSelect={handleDocumentSelect}
+                        />
+                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+                        <div className="modal-action">
+                            <button className="btn btn-sm" onClick={() => handleSelectInModal(selectedDocuments)}>{t('select')}</button>
+                        </div>
+                    </div>
+                </dialog>
+            </div>
         </div>
     );
 };
