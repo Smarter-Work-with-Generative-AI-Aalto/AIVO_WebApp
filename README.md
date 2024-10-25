@@ -5,9 +5,9 @@
 # AIVO
 
 <p>
-    <a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/QuantumData/stargazers"><img src="https://img.shields.io/github/stars/ali-amaan/QuantumData" alt="Github stargazers"></a>
-    <a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/QuantumData/issues"><img src="https://img.shields.io/github/issues/ali-amaan/QuantumData" alt="Github issues"></a>
-    <a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/QuantumData/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ali-amaan/QuantumData" alt="license"></a>
+    <a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp/stargazers"><img src="https://img.shields.io/github/stars/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp" alt="Github stargazers"></a>
+    <a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp/issues"><img src="https://img.shields.io/github/issues/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp" alt="Github issues"></a>
+    <a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp/blob/main/LICENSE"><img src="https://img.shields.io/github/licenseSmarter-Work-with-Generative-AI-Aalto/AIVO_WebApp" alt="license"></a>
     <a href="https://www.linkedin.com/in/henri-schildt-57280"><img src="https://img.shields.io/badge/LinkedIn-blue" alt="LinkedIn"></a>
 </p>
 
@@ -86,17 +86,17 @@ Please follow these simple steps to get a local copy up and running.
 
 #### 1. Setup
 
-- [Fork](https://github.com/Smarter-Work-with-Generative-AI-Aalto/QuantumData) the repository
+- [Fork](https://github.com/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp) the repository
 - Clone the repository by using this command:
 
 ```bash
-git clone https://github.com/Smarter-Work-with-Generative-AI-Aalto/QuantumData.git
+git clone https://github.com/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp.git
 ```
 
 #### 2. Go to the project folder
 
 ```bash
-cd AIVO
+cd AIVO_WebApp
 ```
 
 #### 3. Install dependencies
@@ -118,7 +118,9 @@ cp .env.example .env
 To make the process of installing dependencies easier, we offer a `docker-compose.yml` with a Postgres container.
 
 ```bash
-docker-compose up -d
+docker-compose up -d 
+#or 
+docker compose up -d
 ```
 
 #### 6. Set up database schema
@@ -166,8 +168,8 @@ See [Contributing Guide](CONTRIBUTING.md)
 
 ### Contributors
 
-<a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/QuantumData/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Smarter-Work-with-Generative-AI-Aalto/QuantumData" />
+<a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp" />
 </a>
 
 ### Steps For Contributing
@@ -181,8 +183,8 @@ We welcome contributions from the community! Here’s how you can help:
 2. **Clone your fork**
 
     ```bash
-    git clone https://github.com/your-username/AIVO.git
-    cd AIVO
+    git clone https://github.com/your-username/AIVO_WebApp.git
+    cd AIVO_WebApp
     ```
 
 3. **Create a new branch**
