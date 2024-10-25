@@ -7,11 +7,11 @@
 <p>
     <a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp/stargazers"><img src="https://img.shields.io/github/stars/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp" alt="Github stargazers"></a>
     <a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp/issues"><img src="https://img.shields.io/github/issues/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp" alt="Github issues"></a>
-    <a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp/blob/main/LICENSE"><img src="https://img.shields.io/github/licenseSmarter-Work-with-Generative-AI-Aalto/AIVO_WebApp" alt="license"></a>
+    <a href="https://github.com/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Smarter-Work-with-Generative-AI-Aalto/AIVO_WebApp" alt="license"></a>
     <a href="https://www.linkedin.com/in/henri-schildt-57280"><img src="https://img.shields.io/badge/LinkedIn-blue" alt="LinkedIn"></a>
 </p>
 
-AIVO is an AI-based qualitative research tool designed to help researchers efficiently find and extract relevant information from their custom documents store for a smooth and efficient qualitative research experience using generative AI. We also enable innovate search operations like RAG, RFG, Batch Processing, Serialized Search, etc.
+AIVO is an AI-based qualitative research suite designed to find and extract relevant information from custom data store for a smooth and efficient qualitative research experience using generative AI. Enabling innovate search operations like RAG, RFG, Batch Processing, Serialized Search, etc.
 
 >Please star ⭐ the repo if you want us to continue developing and improving the qualitative research tool! 😀
 
