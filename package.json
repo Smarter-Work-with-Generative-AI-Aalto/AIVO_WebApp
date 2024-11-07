@@ -30,7 +30,7 @@
     "@azure/search-documents": "^12.1.0",
     "@azure/storage-blob": "^12.23.0",
     "@boxyhq/metrics": "0.2.8",
-    "@boxyhq/react-ui": "3.3.43",
+    "@boxyhq/react-ui": "3.3.45",
     "@boxyhq/saml-jackson": "^1.30.0",
     "@heroicons/react": "2.1.4",
     "@langchain/community": "^0.3.11",
