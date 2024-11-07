@@ -30,7 +30,6 @@ export async function processResearchRequestQueue(teamId: string) {
         const documentChunks = await getVectorsForDocumentFromVectorDB(documentId, teamId);
 
         const findings = await handleDocumentSearch(documentChunks, userSearchQuery, sequentialQuery, teamId);
-
         allFindings = allFindings.concat(findings);
 
         await prisma.aIRequestQueue.update({

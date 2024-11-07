@@ -37,7 +37,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse) {
             teamId,
             documentIds,
             userSearchQuery,
-            overallQuery: overallQuery || 'Create a summary based on the following findings:',
+            overallQuery: overallQuery || 'The following text is a summary of different outputs. Please provide an inclusive extended summary of the following answers:',
             similarityScore: similarityScore || 1.0,
             sequentialQuery: sequentialQuery !== undefined ? sequentialQuery : true,
             enhancedSearch: enhancedSearch !== undefined ? enhancedSearch : false,
