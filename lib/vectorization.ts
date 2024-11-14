@@ -88,8 +88,8 @@ if (!AZURE_AISEARCH_ENDPOINT || !AZURE_AISEARCH_KEY) {
 // Function to split document content into chunks using RecursiveCharacterTextSplitter
 export const splitDocumentIntoChunks = async (docs: Document[]) => {
     const splitter = new RecursiveCharacterTextSplitter({
-        chunkSize: 16384,
-        chunkOverlap: 1024,
+        chunkSize: 7000,
+        chunkOverlap: 200,
     });
 
     const splitDocuments = await splitter.splitDocuments(docs);
