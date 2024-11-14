@@ -48,7 +48,7 @@ const DocumentStore = ({ team }: { team: any }) => {
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(event.target.files || []);
-        const MAX_FILES = 5;
+        const MAX_FILES = 100;
         const MAX_SIZE_MB = 5;
 
         if (files.length > MAX_FILES) {

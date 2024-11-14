@@ -48,7 +48,7 @@ const createOpenAISummary = async (findings: any[], teamId: string, overallQuery
         throw new Error(`OpenAI API key not found for team ID: ${teamId}`);
     }
     const llm = new ChatOpenAI({ model: 'gpt-4o', temperature: 0, apiKey: teamOpenAIApiKey });
-    const summaryPrompt = overallQuery || 'The following text is a summary of different outputs. Please provide an inclusive extended summary of the following answers:';
+    const summaryPrompt = 'The following text is a summary of different outputs. Please provide an inclusive extended summary of the following answers:';
     // Create findingsCollated that is a collection of all "content" fields from objects in findings.
     const findingsCollated = JSON.stringify(findings.map(finding => finding.content));
     const response = await llm.invoke(`${summaryPrompt} ${findingsCollated}`);

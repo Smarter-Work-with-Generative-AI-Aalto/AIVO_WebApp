@@ -179,27 +179,46 @@ export const addMetadataToPDFDocuments = async (
 
 export const vectorizeChunks = async (documentId: string, teamId: string, title: string, content: string, mimeType: string) => {
     try {
-        // Fetch OpenAI API key for the team
         const openAIApiKey = await getOpenAIApiKeyForTeam(teamId);
         if (!openAIApiKey) {
             throw new Error(`OpenAI API key not found for team ID: ${teamId}`);
         }
 
         const docs = await loadDocumentContent(content, mimeType);
-        if (mimeType !== 'application/pdf') {
+        const vectorStore = await createVectorStore(openAIApiKey);
+
+        if (mimeType === 'application/pdf') {
+            // If PDF has less than 3 pages, combine into single chunk
+            if (docs.length < 3) {
+                const combinedContent = docs.map(doc => doc.pageContent).join('\n\n');
+                const combinedDoc = new Document({
+                    pageContent: combinedContent,
+                    metadata: {
+                        source: 'Document',
+                        attributes: [
+                            { key: 'documentId', value: documentId },
+                            { key: 'teamId', value: teamId },
+                            { key: 'title', value: title },
+                            { key: 'chunkIndex', value: '0' },
+                            { key: 'wordCount', value: combinedContent.split(/\s+/).filter(word => word.length > 0).length.toString() },
+                            { key: 'characterCount', value: combinedContent.length.toString() },
+                            { key: 'pageCount', value: docs.length.toString() }
+                        ],
+                    },
+                });
+                await vectorStore.addDocuments([combinedDoc]);
+            } else {
+                // For larger PDFs, process normally
+                const textChunks = await splitDocumentIntoChunks(docs);
+                const documents = await mapChunksToDocuments(textChunks, documentId, teamId, title);
+                await vectorStore.addDocuments(documents);
+            }
+        } else {
+            // Handle non-PDF documents as before
             const textChunks = await splitDocumentIntoChunks(docs);
-            const vectorStore = await createVectorStore(openAIApiKey);
             const documents = await mapChunksToDocuments(textChunks, documentId, teamId, title);
             await vectorStore.addDocuments(documents);
-        } else if (mimeType === 'application/pdf') {
-            const vectorStore = await createVectorStore(openAIApiKey);
-            const docswithmetadata = await addMetadataToPDFDocuments(docs, documentId, teamId, title);
-            console.log(docswithmetadata);
-            await vectorStore.addDocuments(docswithmetadata);
         }
-
-
-
     } catch (error) {
         console.error('Error vectorizing chunks:', error);
         throw error;
