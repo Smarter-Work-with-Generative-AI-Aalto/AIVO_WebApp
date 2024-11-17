@@ -41,11 +41,24 @@ const handlePOST = async (req: NextApiRequest, res: NextApiResponse) => {
   const teamMember = await throwIfNoTeamAccess(req, res);
   throwIfNotAllowed(teamMember, 'team_ai_model', 'create');
 
-  const validatedData = AIModelSchema.parse(req.body);
+  let validatedData = AIModelSchema.parse(req.body);
 
   const existingModel = await prisma.aIModel.findFirst({
     where: { teamId: teamMember.team.id },
   });
+
+  // We will only allow AI key to be overwritten if its not an abridged key -- this is because we always censor keys sent to the UI.
+  if (validatedData.openAIApiKey && validatedData.openAIApiKey.length < 12)
+      validatedData.openAIApiKey = existingModel?.openAIApiKey || undefined;
+  if (validatedData.googleAIApiKey && validatedData.googleAIApiKey.length < 12)
+      validatedData.googleAIApiKey = existingModel?.googleAIApiKey || undefined;
+  if (validatedData.azureOpenAIApiKey && validatedData.azureOpenAIApiKey.length < 12)
+      validatedData.azureOpenAIApiKey = existingModel?.azureOpenAIApiKey || undefined;
+
+  console.log("We are about to update the API keys...");
+  console.log("the gemini key we got is: ", validatedData.googleAIApiKey, " while the existing one is: ", existingModel?.googleAIApiKey);
+  console.log("the azure key we got is: ", validatedData.azureOpenAIApiKey, " while the existing one is: ", existingModel?.azureOpenAIApiKey);
+  console.log("the openai key we got is: ", validatedData.openAIApiKey, " while the existing one is: ", existingModel?.openAIApiKey);
 
   let aiModel;
   if (existingModel) {
@@ -73,7 +86,16 @@ const handleGET = async (req: NextApiRequest, res: NextApiResponse) => {
     where: { teamId: teamMember.team.id },
   });
 
-  res.status(200).json({ data: aiModels });
+  const censoredModels = aiModels.map(model => ({
+    ...model,
+    azureOpenAIApiKey: model.azureOpenAIApiKey ? `sk-......${model.azureOpenAIApiKey.slice(-4)}` : null,
+    openAIApiKey: model.openAIApiKey ? `sk-......${model.openAIApiKey.slice(-4)}` : null,
+    googleAIApiKey: model.googleAIApiKey ? `sk-......${model.googleAIApiKey.slice(-4)}` : null,
+  }));
+
+  return res.status(200).json({
+    data: censoredModels
+  });
 };
 
 const handlePUT = async (req: NextApiRequest, res: NextApiResponse) => {

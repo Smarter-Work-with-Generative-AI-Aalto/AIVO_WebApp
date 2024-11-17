@@ -1,6 +1,6 @@
 // lib/researchQueue.ts
 import { prisma } from '../lib/prisma';
-import { sequentialRAGChain, createRAGChain, createOpenAISummary } from '../lib/langchainIntegration';
+import { executeQuery, createAISummary } from '../lib/langchainIntegration';
 import { getVectorsForDocumentFromVectorDB } from '../lib/vectorization';
 import { Page } from 'openai/pagination';
 
@@ -41,7 +41,8 @@ export async function processResearchRequestQueue(teamId: string) {
         });
     }
 
-    const overallSummary = await createOpenAISummary(allFindings, teamId, pendingRequest.overallQuery);
+// Set up a possibility to use gemini or azureOpenAI
+    const overallSummary = await createAISummary(allFindings, teamId, pendingRequest.overallQuery, 'openAI');
 
     await prisma.aIRequestQueue.update({
         where: { id },
@@ -70,12 +71,13 @@ const extractMetadataValue = (metadataAttributes, key) => {
     return attribute ? attribute.value : 'N/A';
 };
 
+// Set up a possibility to use gemini or azureOpenAI
 async function handleDocumentSearch(documentChunks: { content: string, metadata: any }[], query: string, sequential: boolean, teamId: string) {
     const allFindings: { title: string, page: string, content: string }[] = [];
 
     if (sequential) {
         for (const chunk of documentChunks) {
-            const result = await createRAGChain(query, chunk, teamId);
+            const result = await executeQuery(query, chunk, teamId, 'openAI');
             
             const finding = {
                 title: extractMetadataValue(chunk.metadata.attributes, 'title') || 'Untitled Document',
@@ -87,7 +89,7 @@ async function handleDocumentSearch(documentChunks: { content: string, metadata:
             allFindings.push(finding);
         }
     } else {
-        const results = await createRAGChain(query, documentChunks, teamId);
+        const results = await executeQuery(query, documentChunks, teamId, 'openAI');
 
         // results.forEach((result, index) => {
         //     const chunk = documentChunks[index];
