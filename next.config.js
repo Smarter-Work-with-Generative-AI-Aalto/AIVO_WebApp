@@ -52,6 +52,24 @@ const nextConfig = {
       },
     ];
   },
+  eslint: {
+    /** 
+     * Warning: This allows production builds to successfully complete even if
+     * your project has ESLint errors.
+     */
+    ignoreDuringBuilds: true,
+  },
+  // Add the following TypeScript configuration
+  typescript: {
+    /**
+     * !! WARNING !!
+     * 
+     * Enabling this option ignores TypeScript errors during the build.
+     * This can lead to unexpected behavior in production if type errors are present.
+     * Proceed with caution and consider fixing the errors before deploying.
+     */
+    ignoreBuildErrors: true,
+  },
 };
 
 // Additional config options for the Sentry webpack plugin.

@@ -26,7 +26,8 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ teamId, teamSlug }) => {  // 
             try {
                 const response = await fetch(`/api/ai-activity-log?teamId=${teamId}`);
                 if (!response.ok) {
-                    throw new Error('Failed to fetch activity log');
+                    toast.error(t('failed-to-delete-activity'));
+                    throw Error;
                 }
                 const data = await response.json();
                 setActivities(data);
@@ -53,7 +54,8 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ teamId, teamSlug }) => {  // 
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to delete activity');
+                toast.error(t('failed-to-delete-activity'));
+                throw Error;
             }
 
             setActivities((prevActivities) => 
