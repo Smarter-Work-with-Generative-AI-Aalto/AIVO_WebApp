@@ -19,7 +19,7 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ handleFileUpload }) => 
                         type="file"
                         className="hidden"
                         id="fileUpload"
-                        accept=".pdf"
+                        accept=".pdf,.txt,.rtf,.doc,.docx"
                         multiple
                         onChange={handleFileUpload}
                     />
