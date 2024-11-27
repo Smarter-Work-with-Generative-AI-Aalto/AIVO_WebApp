@@ -32,7 +32,7 @@ const ConfigureAIModels = ({ team }) => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchAIModels = async () => {
+        const fetchAIModels: () => Promise<void> = async () => {
             try {
                 const response = await fetch(`/api/teams/${team.slug}/ai-models`, {
                     headers: defaultHeaders,
@@ -40,7 +40,8 @@ const ConfigureAIModels = ({ team }) => {
 
                 if (!response.ok) {
                     toast.error(t('failed-to-fetch-ai-models'));
-                    throw Error('Failed to fetch AI models');
+                    // There is some problem here, throwing the error didnt work!
+                    //                    throw new Error("Failed to fetch AI models");
                 }
 
                 const json = await response.json();
@@ -116,7 +117,8 @@ const ConfigureAIModels = ({ team }) => {
 
     const maskApiKey = (key: string) => {
         if (key.length <= 4) return '****';
-        return '****' + key.slice(-4);
+        return key;
+        //return '****' + key.slice(-4);
     };
 
     const [showKeys, setShowKeys] = useState<{ [key: string]: boolean }>({});

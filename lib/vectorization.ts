@@ -25,16 +25,25 @@ if (typeof window === 'undefined') {
     fs = require('fs/promises');
 }
 
-export const getOpenAIApiKeyForTeam = async (teamId: string): Promise<string | null> => {
+export const getAIKeysForTeam = async (teamId: string) => {
     try {
         const aiModel = await prisma.aIModel.findFirst({
             where: { teamId },
-            select: { openAIApiKey: true },
+            select: { 
+                openAIApiKey: true,
+                googleAIApiKey: true,
+            },
         });
-        return aiModel?.openAIApiKey || null;
+        return {
+            openAIKey: aiModel?.openAIApiKey || null,
+            geminiKey: aiModel?.googleAIApiKey || null,
+        };
     } catch (error) {
-        console.error('Error fetching OpenAI API key:', error);
-        return null;
+        console.error('Error fetching AI API keys:', error);
+        return {
+            openAIKey: null,
+            geminiKey: null,
+        };
     }
 };
 
@@ -179,13 +188,13 @@ export const addMetadataToPDFDocuments = async (
 
 export const vectorizeChunks = async (documentId: string, teamId: string, title: string, content: string, mimeType: string) => {
     try {
-        const openAIApiKey = await getOpenAIApiKeyForTeam(teamId);
-        if (!openAIApiKey) {
-            throw new Error(`OpenAI API key not found for team ID: ${teamId}`);
+        const aiKeys = await getAIKeysForTeam(teamId);
+        if (!aiKeys.openAIKey && !aiKeys.geminiKey) {
+            throw new Error(`No AI API keys found for team ID: ${teamId}`);
         }
 
         const docs = await loadDocumentContent(content, mimeType);
-        const vectorStore = await createVectorStore(openAIApiKey);
+        const vectorStore = await createVectorStore(aiKeys.openAIKey!);
 
         if (mimeType === 'application/pdf') {
             // If PDF has less than 3 pages, combine into single chunk
@@ -229,16 +238,16 @@ export const vectorizeChunks = async (documentId: string, teamId: string, title:
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const getVectorsForDocumentFromVectorDB = async (documentId: string, teamId: string) => {
-    const MAX_RETRIES = 3; // Maximum number of retries
-    const RETRY_DELAY = 5000; // Delay between retries in milliseconds (5 seconds)
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 5000;
 
     try {
-        const openAIApiKey = await getOpenAIApiKeyForTeam(teamId);
-        if (!openAIApiKey) {
+        const aiKeys = await getAIKeysForTeam(teamId);
+        if (!aiKeys.openAIKey) {
             throw new Error(`OpenAI API key not found for team ID: ${teamId}`);
         }
 
-        const vectorStore = await createVectorStore(openAIApiKey);
+        const vectorStore = await createVectorStore(aiKeys.openAIKey);
 
         // Retry logic
         for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -289,13 +298,12 @@ export const addVectorsInPrismaDB = async (vectors: { content: string, metadata:
 
 export const deleteVectorsFromVectorDB = async (documentId: string, teamId: string) => {
     try {
-        // Fetch OpenAI API key for the team
-        const openAIApiKey = await getOpenAIApiKeyForTeam(teamId);
-        if (!openAIApiKey) {
+        const aiKeys = await getAIKeysForTeam(teamId);
+        if (!aiKeys.openAIKey) {
             throw new Error(`OpenAI API key not found for team ID: ${teamId}`);
         }
 
-        const vectorStore = await createVectorStore(openAIApiKey);
+        const vectorStore = await createVectorStore(aiKeys.openAIKey);
 
         // Delete documents based on the metadata attribute `documentId`
         await vectorStore.delete({ filter: { filterExpression: `metadata/attributes/any(attr: attr/key eq 'documentId' and attr/value eq '${documentId}')` } });
