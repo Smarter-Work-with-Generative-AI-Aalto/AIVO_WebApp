@@ -4,7 +4,7 @@ const { withSentryConfig } = require('@sentry/nextjs');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: { esmExternals: false, webpackBuildWorker: true },
+  experimental: { esmExternals: 'loose', webpackBuildWorker: true },
   reactStrictMode: true,
   images: {
     remotePatterns: [
@@ -70,6 +70,7 @@ const nextConfig = {
      */
     ignoreBuildErrors: true,
   },
+  transpilePackages: ['openid-client', '@boxyhq/saml-jackson'],
 };
 
 // Additional config options for the Sentry webpack plugin.
