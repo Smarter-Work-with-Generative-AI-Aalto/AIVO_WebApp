@@ -32,7 +32,7 @@
     "@boxyhq/metrics": "0.2.8",
     "@boxyhq/react-ui": "3.3.43",
     "@boxyhq/saml-jackson": "^1.32.0",
-    "@heroicons/react": "2.1.4",
+    "@heroicons/react": "2.2.0",
     "@langchain/community": "^0.3.11",
     "@langchain/google-genai": "^0.1.4",
     "@langchain/openai": "^0.2.5",
