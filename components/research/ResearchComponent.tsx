@@ -8,7 +8,7 @@ import Loading from '../shared/Loading';
 import Card from '../shared/Card';
 import { BsFiletypePdf, BsFiletypeTxt, BsFiletypeDoc, BsFiletypePpt, BsFiletypeCsv, BsFileEarmarkText } from "react-icons/bs";
 import { IoOpenOutline } from "react-icons/io5";
-import { Button } from 'react-daisyui';
+import { Button, Tooltip } from 'react-daisyui';
 import SelectableDocumentTable from '../documentStore/SelectableDocumentTable';
 import toast from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
@@ -22,6 +22,8 @@ const ResearchComponent = ({ team }: { team: any }) => {
     const [error, setError] = useState<string | null>(null);
     const [overallQuery, setOverallQuery] = useState('');
     const [isCollapsed, setIsCollapsed] = useState(true);
+    const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+    const [isTooltipTwoOpen, setIsTooltipTwoOpen] = useState(false);
     // const { data: session, status } = useSession(); // Hook from next-auth to get the session
     // const [userId, setUserId] = useState<string | null>(null);
 
@@ -101,6 +103,15 @@ const ResearchComponent = ({ team }: { team: any }) => {
         }
     };
 
+    const renderTooltipContent = (text: string) => {
+        return text.split('\n').map((line, index) => (
+            <React.Fragment key={index}>
+                {line}
+                {index < text.split('\n').length - 1 && <br />}
+            </React.Fragment>
+        ));
+    };
+
     const handleSubmit = async () => {
         // if (!userId) {
         //     toast.error('User ID not found');
@@ -156,7 +167,21 @@ const ResearchComponent = ({ team }: { team: any }) => {
             <div className="p-4">
                 <div className="card w-full border-rounded bg-neutral-100 mb-4 mt-4">
                     <Card.Body>
-                        <h2 className="text-xl font-semibold">{t('research-step-one')}</h2>
+                        <h2 className="text-xl font-semibold">{t('research-step-one')}
+                            <div className="relative inline-block">
+                                <span
+                                    className="cursor-pointer text-xs bg-base-200 px-2 py-1 rounded-full z-1000 ml-2"
+                                    onClick={() => setIsTooltipOpen(!isTooltipOpen)}
+                                >
+                                    ?
+                                </span>
+                                {isTooltipOpen && (
+                                    <div className="absolute bottom-0 w-[500px] text-xs left-full mb-2 ml-2 p-2 bg-white border rounded shadow-lg z-50">
+                                        {renderTooltipContent(t('step-one-tooltip'))}
+                                    </div>
+                                )}
+                            </div>
+                        </h2>
                         <div>
                             <label className="input input-bordered flex items-center gap-2 rounded-full">
                                 <svg
@@ -203,10 +228,25 @@ const ResearchComponent = ({ team }: { team: any }) => {
                         </div>
                     </Card.Body>
                 </div>
-                <div tabIndex={0} className="collapse collapse-arrow bg-neutral-100 mb-2 mt-4">
+                <div className="collapse collapse-arrow bg-neutral-100 mb-2 mt-4 overflow-visible">
+                    <input type="checkbox" />
                     <div className="collapse-title badge-neutral-100 text-sm font-medium">{t('Optional Settings')}</div>
                     <div className="collapse-content">
-                        <h2 className="text-xl font-semibold mb-2 mt-4">{t('research-step-three')}</h2>
+                        <h2 className="text-xl font-semibold mb-2 mt-4">{t('research-step-three')}
+                            <div className="relative inline-block">
+                                <span
+                                    className="cursor-pointer text-xs bg-base-200 px-2 py-1 rounded-full ml-2"
+                                    onClick={() => setIsTooltipTwoOpen(!isTooltipTwoOpen)}
+                                >
+                                    ?
+                                </span>
+                                {isTooltipTwoOpen && (
+                                    <div className="absolute w-[500px] bottom-0 text-xs left-full mb-2 ml-2 p-2 bg-white border rounded shadow-lg z-50">
+                                        {renderTooltipContent(t('step-three-tooltip'))}
+                                    </div>
+                                )}
+                            </div>
+                        </h2>
                         <label className="input input-bordered flex items-center gap-2 rounded-full">
                             <input
                                 name="overallQuery"
