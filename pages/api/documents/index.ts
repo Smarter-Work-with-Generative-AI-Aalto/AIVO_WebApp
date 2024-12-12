@@ -9,6 +9,7 @@ import { BlobServiceClient } from '@azure/storage-blob';
 import { createDocument, getDocumentsByTeam, getDocumentsByStatus, deleteDocument, getDocument } from 'models/document';
 import { updateDocument } from 'models/document';
 import { vectorizeChunks, getVectorsForDocumentFromVectorDB, addVectorsInPrismaDB, deleteVectorsFromVectorDB, deleteVectorsFromPrismaDB } from '@/lib/vectorization';
+import os from 'os';
 
 export const config = {
     api: {
@@ -16,12 +17,15 @@ export const config = {
     },
 };
 
+// Use OS temp directory for temporary file uploads
+const uploadsDir = os.tmpdir();
+
 // Ensure the uploads directory exists
-const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-    fs.chmodSync(uploadsDir, '0777');
-}
+// const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+// if (!fs.existsSync(uploadsDir)) {
+//     fs.mkdirSync(uploadsDir, { recursive: true });
+//     fs.chmodSync(uploadsDir, '0777');
+// }
 
 const deleteFromLocal = (filePath) => {
     const fullPath = path.join(process.cwd(), 'public', 'uploads', filePath);
@@ -56,25 +60,77 @@ const deleteFromS3 = async (fileKey) => {
 };
 
 const uploadToAzure = async (file) => {
-    const blobServiceClient = BlobServiceClient.fromConnectionString(
-        `DefaultEndpointsProtocol=https;AccountName=${process.env.AZURE_STORAGE_ACCOUNT};AccountKey=${process.env.AZURE_STORAGE_ACCESS_KEY};EndpointSuffix=core.windows.net`
-    );
-    const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_STORAGE_CONTAINER);
-    const blockBlobClient = containerClient.getBlockBlobClient(file.originalFilename);
-    const fileContent = fs.readFileSync(file.filepath);
-    await blockBlobClient.upload(fileContent, fileContent.length);
-    fs.unlinkSync(file.filepath);
-    return blockBlobClient.url;
+    if (!process.env.AZURE_STORAGE_CONNECTION_STRING) {
+        throw new Error('Azure Storage connection string is not configured');
+    }
+    
+    try {
+        // Log connection string format (remove sensitive data)
+        const connString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+        console.log('Connection string format check:', 
+            connString.startsWith('DefaultEndpointsProtocol=https'));
+        
+        const blobServiceClient = BlobServiceClient.fromConnectionString(
+            process.env.AZURE_STORAGE_CONNECTION_STRING
+        );
+        
+        // Create container if it doesn't exist
+        const containerName = 'aivodocumentstore'; // or any other container name you want to use
+        const containerClient = blobServiceClient.getContainerClient(containerName);
+        await containerClient.createIfNotExists(
+            {
+                access: 'container'
+            }
+        );
+        
+        // Generate a unique filename to prevent overwrites
+        const uniqueFileName = `${Date.now()}-${file.originalFilename}`;
+        const blockBlobClient = containerClient.getBlockBlobClient(uniqueFileName);
+        
+        // Upload the file
+        const fileContent = fs.readFileSync(file.filepath);
+        await blockBlobClient.upload(fileContent, fileContent.length, {
+            blobHTTPHeaders: {
+                blobContentType: file.mimetype
+            }
+        });
+        
+        // Clean up the temporary file
+        fs.unlinkSync(file.filepath);
+        
+        return blockBlobClient.url;
+    } catch (error) {
+        console.error('Error uploading to Azure:', error);
+        throw new Error('Failed to upload file to Azure Storage');
+    }
 };
 
-const deleteFromAzure = async (fileKey) => {
-    const blobServiceClient = BlobServiceClient.fromConnectionString(
-        `DefaultEndpointsProtocol=https;AccountName=${process.env.AZURE_STORAGE_ACCOUNT};AccountKey=${process.env.AZURE_STORAGE_ACCESS_KEY};EndpointSuffix=core.windows.net`
-    );
-    const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_STORAGE_CONTAINER);
-    const blockBlobClient = containerClient.getBlockBlobClient(fileKey);
-    await blockBlobClient.delete();
-    console.log('deleted from Azure');
+const deleteFromAzure = async (fileUrl: string) => {
+    if (!process.env.AZURE_STORAGE_CONNECTION_STRING) {
+        throw new Error('Azure Storage connection string is not configured');
+    }
+    
+    try {
+        const connString = process.env.AZURE_STORAGE_CONNECTION_STRING.replace(/["']/g, '');
+        const blobServiceClient = BlobServiceClient.fromConnectionString(connString);
+        
+        // Extract container name and blob name from URL
+        const url = new URL(fileUrl);
+        const pathParts = url.pathname.split('/');
+        const containerName = pathParts[1];  // 'aivodocumentstore'
+        const blobName = pathParts.slice(2).join('/');  // actual filename
+        
+        console.log('Deleting blob:', { containerName, blobName });
+        
+        const containerClient = blobServiceClient.getContainerClient(containerName);
+        const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+        
+        await blockBlobClient.delete();
+        console.log('Successfully deleted from Azure:', blobName);
+    } catch (error) {
+        console.error('Error deleting from Azure:', error);
+        throw error;
+    }
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -151,23 +207,29 @@ async function createDocumentHandler(req: NextApiRequest, res: NextApiResponse) 
         const documentsArray = [];
 
         for (const file of uploadedFiles) {
-            const newFilepath = path.join(uploadsDir, file.newFilename);
-            fs.renameSync(file.filepath, newFilepath);
+            // const newFilepath = path.join(uploadsDir, file.newFilename);
+            // fs.renameSync(file.filepath, newFilepath);
 
-            let fileUrl = '';
-            if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-                fileUrl = await uploadToS3(file);
-            } else if (process.env.AZURE_STORAGE_ACCOUNT && process.env.AZURE_STORAGE_ACCESS_KEY) {
-                fileUrl = await uploadToAzure(file);
-            } else {
-                fileUrl = `/uploads/${file.newFilename}`;
-            }
+            // let fileUrl = '';
+            // if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+            //     fileUrl = await uploadToS3(file);
+            // } else if (process.env.AZURE_STORAGE_ACCOUNT_NAME && process.env.AZURE_STORAGE_ACCESS_KEY) {
+            //     fileUrl = await uploadToAzure(file);
+            // } else {
+            //     fileUrl = `/uploads/${file.newFilename}`;
 
             try {
+                // Upload to Azure Blob Storage
+                const uniqueFileName = `${Date.now()}-${file.originalFilename}`;
+                const fileUrl = await uploadToAzure({
+                    ...file,
+                    originalFilename: uniqueFileName
+                });
+
                 const newDocument = await createDocument({
                     teamId: String(teamId),
                     title: `${file.originalFilename}`,
-                    fileName: `${file.newFilename}`,
+                    fileName: `${uniqueFileName}`,
                     content: fileUrl,
                     status: 'Uploaded',
                     type: String(file.mimetype),
@@ -231,14 +293,17 @@ async function deleteDocumentHandler(req: NextApiRequest, res: NextApiResponse) 
             }
 
             try {
-                // Delete the document from the storage
-                if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-                    await deleteFromS3(document.fileName);
-                } else if (process.env.AZURE_STORAGE_ACCOUNT && process.env.AZURE_STORAGE_ACCESS_KEY) {
-                    await deleteFromAzure(document.fileName);
-                } else {
-                    deleteFromLocal(document.fileName);
-                }
+                // // Delete the document from the storage
+                // if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+                //     await deleteFromS3(document.fileName);
+                // } else if (process.env.AZURE_STORAGE_ACCOUNT && process.env.AZURE_STORAGE_ACCESS_KEY) {
+                //     await deleteFromAzure(document.fileName);
+                // } else {
+                //     deleteFromLocal(document.fileName);
+                // }
+
+                // Delete from Azure Blob Storage
+                await deleteFromAzure(document.content);
                 
                 // Delete vector embeddings from vector DB
                 await deleteVectorsFromVectorDB(document.id, document.teamId);

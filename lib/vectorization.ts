@@ -6,13 +6,18 @@ import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { Document } from '@langchain/core/documents';
 import path from 'path';
 import { prisma } from '@/lib/prisma';
+import { BlobServiceClient } from '@azure/storage-blob';
+import { Readable } from 'stream';
+import { finished } from 'stream/promises';
+import os from 'os';
+import fs from 'fs';
 
 const { AZURE_AISEARCH_ENDPOINT, AZURE_AISEARCH_KEY } = process.env;
 // Define the base directory for file uploads
 const UPLOADS_DIR = path.join(process.cwd(), 'public');
 
 // Dynamically load these loaders only when required to prevent bundling in client-side code
-let DocxLoader, PPTXLoader, TextLoader, JSONLoader, CSVLoader, PDFLoader, fs;
+let DocxLoader, PPTXLoader, TextLoader, JSONLoader, CSVLoader, PDFLoader;
 
 if (typeof window === 'undefined') {
     // Import these modules only on the server-side
@@ -22,7 +27,6 @@ if (typeof window === 'undefined') {
     JSONLoader = require('langchain/document_loaders/fs/json').JSONLoader;
     CSVLoader = require('@langchain/community/document_loaders/fs/csv').CSVLoader;
     PDFLoader = require('@langchain/community/document_loaders/fs/pdf').PDFLoader;
-    fs = require('fs/promises');
 }
 
 export const getAIKeysForTeam = async (teamId: string) => {
@@ -48,44 +52,61 @@ export const getAIKeysForTeam = async (teamId: string) => {
 };
 
 // Function to load a PDF file and return its content
-export const loadDocumentContent = async (relativeFilePath: string, mimeType: string): Promise<Document[]> => {
+export const loadDocumentContent = async (fileUrl: string, mimeType: string): Promise<Document[]> => {
     try {
-        // Construct the absolute file path
-        const absoluteFilePath = path.join(UPLOADS_DIR, relativeFilePath);
-
-        // Check if the file exists
-        await fs.access(absoluteFilePath);
-
+        // Create a temporary file path
+        const tempFilePath = path.join(os.tmpdir(), `temp-${Date.now()}-${path.basename(fileUrl)}`);
+        
+        // Download file from Azure Blob Storage
+        const blobServiceClient = BlobServiceClient.fromConnectionString(
+            process.env.AZURE_STORAGE_CONNECTION_STRING
+        );
+        
+        // Extract container name and blob name from URL
+        const url = new URL(fileUrl);
+        const pathParts = url.pathname.split('/');
+        const containerName = pathParts[1];
+        const blobName = pathParts.slice(2).join('/');
+        
+        const containerClient = blobServiceClient.getContainerClient(containerName);
+        const blobClient = containerClient.getBlobClient(blobName);
+        
+        // Download the blob to a local temp file
+        await blobClient.downloadToFile(tempFilePath);
+        
         // Determine the appropriate loader based on MIME type
         let loader;
         switch (mimeType) {
             case 'application/pdf':
-                loader = new PDFLoader(absoluteFilePath, { splitPages: true });
+                loader = new PDFLoader(tempFilePath, { splitPages: true });
                 break;
             case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-                loader = new DocxLoader(absoluteFilePath);
+                loader = new DocxLoader(tempFilePath);
                 break;
             case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
-                loader = new PPTXLoader(absoluteFilePath);
+                loader = new PPTXLoader(tempFilePath);
                 break;
             case 'text/csv':
-                loader = new CSVLoader(absoluteFilePath);
+                loader = new CSVLoader(tempFilePath);
                 break;
             case 'text/plain':
-                loader = new TextLoader(absoluteFilePath);
+                loader = new TextLoader(tempFilePath);
                 break;
             case 'application/json':
-                loader = new JSONLoader(absoluteFilePath);
+                loader = new JSONLoader(tempFilePath);
                 break;
             default:
                 throw new Error(`Unsupported file type: ${mimeType}`);
         }
 
         const documents = await loader.load();
-
+        
+        // Clean up temp file
+        fs.unlinkSync(tempFilePath);
+        
         return documents;
     } catch (error) {
-        console.error("Error loading ${mimeType} content:", error);
+        console.error("Error loading document content:", error);
         throw error;
     }
 };

@@ -28,7 +28,10 @@
   },
   "dependencies": {
     "@azure/search-documents": "^12.1.0",
-    "@azure/storage-blob": "^12.23.0",
+    "@azure/storage-blob": "^12.26.0",
+    "@azure/storage-file-datalake": "^12.25.0",
+    "@azure/storage-file-share": "^12.26.0",
+    "@azure/storage-queue": "^12.25.0",
     "@boxyhq/metrics": "0.2.8",
     "@boxyhq/react-ui": "3.3.43",
     "@boxyhq/saml-jackson": "^1.32.0",
