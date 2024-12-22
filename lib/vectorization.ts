@@ -33,7 +33,7 @@ export const getAIKeysForTeam = async (teamId: string) => {
     try {
         const aiModel = await prisma.aIModel.findFirst({
             where: { teamId },
-            select: { 
+            select: {
                 openAIApiKey: true,
                 googleAIApiKey: true,
             },
@@ -53,62 +53,74 @@ export const getAIKeysForTeam = async (teamId: string) => {
 
 // Function to load a PDF file and return its content
 export const loadDocumentContent = async (fileUrl: string, mimeType: string): Promise<Document[]> => {
-    try {
-        // Create a temporary file path
-        const tempFilePath = path.join(os.tmpdir(), `temp-${Date.now()}-${path.basename(fileUrl)}`);
-        
-        // Download file from Azure Blob Storage
-        const blobServiceClient = BlobServiceClient.fromConnectionString(
-            process.env.AZURE_STORAGE_CONNECTION_STRING
-        );
-        
-        // Extract container name and blob name from URL
-        const url = new URL(fileUrl);
-        const pathParts = url.pathname.split('/');
-        const containerName = pathParts[1];
-        const blobName = pathParts.slice(2).join('/');
-        
-        const containerClient = blobServiceClient.getContainerClient(containerName);
-        const blobClient = containerClient.getBlobClient(blobName);
-        
-        // Download the blob to a local temp file
-        await blobClient.downloadToFile(tempFilePath);
-        
-        // Determine the appropriate loader based on MIME type
-        let loader;
-        switch (mimeType) {
-            case 'application/pdf':
-                loader = new PDFLoader(tempFilePath, { splitPages: true });
-                break;
-            case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-                loader = new DocxLoader(tempFilePath);
-                break;
-            case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
-                loader = new PPTXLoader(tempFilePath);
-                break;
-            case 'text/csv':
-                loader = new CSVLoader(tempFilePath);
-                break;
-            case 'text/plain':
-                loader = new TextLoader(tempFilePath);
-                break;
-            case 'application/json':
-                loader = new JSONLoader(tempFilePath);
-                break;
-            default:
-                throw new Error(`Unsupported file type: ${mimeType}`);
-        }
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 seconds
 
-        const documents = await loader.load();
-        
-        // Clean up temp file
-        fs.unlinkSync(tempFilePath);
-        
-        return documents;
-    } catch (error) {
-        console.error("Error loading document content:", error);
-        throw error;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            // Create a temporary file path
+            const tempFilePath = path.join(os.tmpdir(), `temp-${Date.now()}-${path.basename(fileUrl)}`);
+
+            // Download file from Azure Blob Storage
+            const blobServiceClient = BlobServiceClient.fromConnectionString(
+                process.env.AZURE_STORAGE_CONNECTION_STRING
+            );
+
+            // Extract container name and blob name from URL
+            const url = new URL(fileUrl);
+            const pathParts = url.pathname.split('/');
+            const containerName = pathParts[1];
+            const blobName = decodeURIComponent(pathParts.slice(2).join('/'));
+
+            console.log('Attempting to download blob:', { containerName, blobName });
+            
+            const containerClient = blobServiceClient.getContainerClient(containerName);
+            const blobClient = containerClient.getBlobClient(blobName);
+
+            // Download the blob to a local temp file
+            await blobClient.downloadToFile(tempFilePath);
+
+            // Determine the appropriate loader based on MIME type
+            let loader;
+            switch (mimeType) {
+                case 'application/pdf':
+                    loader = new PDFLoader(tempFilePath, { splitPages: true });
+                    break;
+                case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+                    loader = new DocxLoader(tempFilePath);
+                    break;
+                case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+                    loader = new PPTXLoader(tempFilePath);
+                    break;
+                case 'text/csv':
+                    loader = new CSVLoader(tempFilePath);
+                    break;
+                case 'text/plain':
+                    loader = new TextLoader(tempFilePath);
+                    break;
+                case 'application/json':
+                    loader = new JSONLoader(tempFilePath);
+                    break;
+                default:
+                    throw new Error(`Unsupported file type: ${mimeType}`);
+            }
+
+            const documents = await loader.load();
+
+            // Clean up temp file
+            fs.unlinkSync(tempFilePath);
+
+            return documents;
+        } catch (error) {
+            if (attempt === maxRetries) {
+                console.error(`Final attempt failed after ${maxRetries} retries:`, error);
+                throw error;
+            }
+            console.log(`Attempt ${attempt} failed, retrying in ${retryDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
     }
+    throw new Error('Failed to load document after all retries');
 };
 
 if (!AZURE_AISEARCH_ENDPOINT || !AZURE_AISEARCH_KEY) {

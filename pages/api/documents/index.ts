@@ -63,17 +63,17 @@ const uploadToAzure = async (file) => {
     if (!process.env.AZURE_STORAGE_CONNECTION_STRING) {
         throw new Error('Azure Storage connection string is not configured');
     }
-    
+
     try {
         // Log connection string format (remove sensitive data)
         const connString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-        console.log('Connection string format check:', 
+        console.log('Connection string format check:',
             connString.startsWith('DefaultEndpointsProtocol=https'));
-        
+
         const blobServiceClient = BlobServiceClient.fromConnectionString(
             process.env.AZURE_STORAGE_CONNECTION_STRING
         );
-        
+
         // Create container if it doesn't exist
         const containerName = 'aivodocumentstore'; // or any other container name you want to use
         const containerClient = blobServiceClient.getContainerClient(containerName);
@@ -82,11 +82,13 @@ const uploadToAzure = async (file) => {
                 access: 'container'
             }
         );
-        
+
         // Generate a unique filename to prevent overwrites
-        const uniqueFileName = `${Date.now()}-${file.originalFilename}`;
+        // Clean the filename to prevent encoding issues
+        const cleanFileName = file.originalFilename.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const uniqueFileName = `${Date.now()}-${cleanFileName}`;
         const blockBlobClient = containerClient.getBlockBlobClient(uniqueFileName);
-        
+
         // Upload the file
         const fileContent = fs.readFileSync(file.filepath);
         await blockBlobClient.upload(fileContent, fileContent.length, {
@@ -94,11 +96,15 @@ const uploadToAzure = async (file) => {
                 blobContentType: file.mimetype
             }
         });
-        
+
         // Clean up the temporary file
         fs.unlinkSync(file.filepath);
-        
-        return blockBlobClient.url;
+
+        // Return both the URL and the clean filename
+        return {
+            url: blockBlobClient.url,
+            fileName: uniqueFileName
+        };
     } catch (error) {
         console.error('Error uploading to Azure:', error);
         throw new Error('Failed to upload file to Azure Storage');
@@ -109,22 +115,22 @@ const deleteFromAzure = async (fileUrl: string) => {
     if (!process.env.AZURE_STORAGE_CONNECTION_STRING) {
         throw new Error('Azure Storage connection string is not configured');
     }
-    
+
     try {
         const connString = process.env.AZURE_STORAGE_CONNECTION_STRING.replace(/["']/g, '');
         const blobServiceClient = BlobServiceClient.fromConnectionString(connString);
-        
+
         // Extract container name and blob name from URL
         const url = new URL(fileUrl);
         const pathParts = url.pathname.split('/');
         const containerName = pathParts[1];  // 'aivodocumentstore'
         const blobName = pathParts.slice(2).join('/');  // actual filename
-        
+
         console.log('Deleting blob:', { containerName, blobName });
-        
+
         const containerClient = blobServiceClient.getContainerClient(containerName);
         const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-        
+
         await blockBlobClient.delete();
         console.log('Successfully deleted from Azure:', blobName);
     } catch (error) {
@@ -221,7 +227,7 @@ async function createDocumentHandler(req: NextApiRequest, res: NextApiResponse) 
             try {
                 // Upload to Azure Blob Storage
                 const uniqueFileName = `${Date.now()}-${file.originalFilename}`;
-                const fileUrl = await uploadToAzure({
+                const uploadResult = await uploadToAzure({
                     ...file,
                     originalFilename: uniqueFileName
                 });
@@ -230,31 +236,44 @@ async function createDocumentHandler(req: NextApiRequest, res: NextApiResponse) 
                     teamId: String(teamId),
                     title: `${file.originalFilename}`,
                     fileName: `${uniqueFileName}`,
-                    content: fileUrl,
+                    content: uploadResult.url,
                     status: 'Uploaded',
                     type: String(file.mimetype),
                 });
                 documentsArray.push(newDocument);
 
-                // Update the document status to 'Vectorizing'
-                await updateDocument({
-                    where: { id: newDocument.id },
-                    data: { status: 'Vectorizing' }
-                });
+                // Delay before starting vectorization (3 seconds)
+                await new Promise(resolve => setTimeout(resolve, 3000));
 
-                // Split the document into chunks, vectorize them using OpenAI Embeddings, upload to Azure Vector Store
-                await vectorizeChunks(newDocument.id, newDocument.teamId, newDocument.title, newDocument.content, newDocument.type);
+                try {
+                    // Update the document status to 'Vectorizing'
+                    await updateDocument({
+                        where: { id: newDocument.id },
+                        data: { status: 'Vectorizing' }
+                    });
 
-                const vectors = await getVectorsForDocumentFromVectorDB(newDocument.id, newDocument.teamId);
+                    // Split the document into chunks, vectorize them
+                    await vectorizeChunks(newDocument.id, newDocument.teamId, newDocument.title, uploadResult.url, newDocument.type);
 
-                await addVectorsInPrismaDB(vectors, newDocument.id);
+                    const vectors = await getVectorsForDocumentFromVectorDB(newDocument.id, newDocument.teamId);
+                    await addVectorsInPrismaDB(vectors, newDocument.id);
 
-                // Update the document status to 'Ready'
-                await updateDocument({
-                    where: { id: newDocument.id },
-                    data: { status: 'Ready' }
-                });
+                    // Update the document status to 'Ready'
+                    await updateDocument({
+                        where: { id: newDocument.id },
+                        data: { status: 'Ready' }
+                    });
+                } catch (vectorizationError) {
+                    console.error('Vectorization error:', vectorizationError);
 
+                    // Update document status to error
+                    await updateDocument({
+                        where: { id: newDocument.id },
+                        data: { status: 'Error' }
+                    });
+
+                    throw vectorizationError;
+                }
                 console.log('Document Vectorization Completed');
             } catch (error) {
                 console.error('Error Uploading Document:', error);
@@ -304,16 +323,19 @@ async function deleteDocumentHandler(req: NextApiRequest, res: NextApiResponse) 
 
                 // Delete from Azure Blob Storage
                 await deleteFromAzure(document.content);
-                
+                console.log('Document Deleted from Azure Blob Storage');
+
                 // Delete vector embeddings from vector DB
                 await deleteVectorsFromVectorDB(document.id, document.teamId);
+                console.log('Vector Embeddings Deleted from Azure Vector DB');
 
                 // Delete vector embeddings from Prisma DB
                 await deleteVectorsFromPrismaDB(document.id);
+                console.log('Vector Embeddings Deleted from Prisma DB');
 
                 // Delete the document from the database
                 await deleteDocument({ id: String(id) });
-
+                console.log('Document Deleted from Prisma DB');
                 return res.status(204).end();
             } catch (error) {
                 console.error('Error deleting document:', error);
