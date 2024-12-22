@@ -92,11 +92,16 @@ const env = {
   darkModeEnabled: process.env.NEXT_PUBLIC_DARK_MODE !== 'false',
 
   teamFeatures: {
-    sso: process.env.FEATURE_TEAM_SSO !== 'false',
-    dsync: process.env.FEATURE_TEAM_DSYNC !== 'false',
-    webhook: process.env.FEATURE_TEAM_WEBHOOK !== 'false',
-    apiKey: process.env.FEATURE_TEAM_API_KEY !== 'false',
-    auditLog: process.env.FEATURE_TEAM_AUDIT_LOG !== 'false',
+    //sso: process.env.FEATURE_TEAM_SSO !== 'false',
+    //dsync: process.env.FEATURE_TEAM_DSYNC !== 'false',
+    //webhook: process.env.FEATURE_TEAM_WEBHOOK !== 'false',
+    //apiKey: process.env.FEATURE_TEAM_API_KEY !== 'false',
+    //auditLog: process.env.FEATURE_TEAM_AUDIT_LOG !== 'false',
+    sso: false,
+    dsync: false,
+    webhook: false,
+    apiKey: false,
+    auditLog: false,
     payments:
       process.env.FEATURE_TEAM_PAYMENTS === 'false'
         ? false

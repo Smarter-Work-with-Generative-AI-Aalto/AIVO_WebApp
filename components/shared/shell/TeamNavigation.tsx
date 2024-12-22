@@ -18,12 +18,12 @@ const TeamNavigation = ({ slug, activePathname }: NavigationItemsProps) => {
     //   icon: CodeBracketIcon,
     //   active: activePathname === `/teams/${slug}/products`,
     // },
-    {
-      name: t('home'),
-      href: `/teams/${slug}/home`,
-      icon: HomeIcon,
-      active: activePathname === `/teams/${slug}/home`,
-    },
+    //{
+    //  name: t('home'),
+    //  href: `/teams/${slug}/home`,
+    //  icon: HomeIcon,
+    //  active: activePathname === `/teams/${slug}/home`,
+    //},
     {
       name: t('ai-research'),
       href: `/teams/${slug}/ai-research`,
