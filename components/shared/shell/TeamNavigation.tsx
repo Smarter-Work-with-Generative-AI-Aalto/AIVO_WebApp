@@ -1,4 +1,4 @@
-import { Cog6ToothIcon, ArchiveBoxIcon, MagnifyingGlassIcon, HomeIcon, BellIcon } from '@heroicons/react/24/outline';
+import { QuestionMarkCircleIcon, Cog6ToothIcon, ArchiveBoxIcon, MagnifyingGlassIcon, HomeIcon, BellIcon } from '@heroicons/react/24/outline';
 //import { CodeBracketIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'next-i18next';
 import NavigationItems from './NavigationItems';
@@ -41,6 +41,12 @@ const TeamNavigation = ({ slug, activePathname }: NavigationItemsProps) => {
       href: `/teams/${slug}/activity-log`,
       icon: BellIcon,
       active: activePathname === `/teams/${slug}/activity-log`,
+    },
+    {
+      name: t('help'),
+      href: `/teams/${slug}/help`,
+      icon: QuestionMarkCircleIcon,
+      active: activePathname === `/teams/${slug}/help`,
     },
     {
       name: t('settings'),
