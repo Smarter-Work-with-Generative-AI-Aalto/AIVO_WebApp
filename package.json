@@ -79,7 +79,7 @@
     "pg": "^8.12.0",
     "pgvector": "^0.2.0",
     "react": "18.3.1",
-    "react-daisyui": "5.0.0",
+    "react-daisyui": "5.0.5",
     "react-dom": "18.3.1",
     "react-dropzone": "^14.3.5",
     "react-element-to-jsx-string": "^15.0.0",
