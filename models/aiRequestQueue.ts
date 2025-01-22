@@ -2,7 +2,7 @@
 import { ApiError } from '../lib/errors';
 import { Action, Resource, permissions } from '../lib/permissions';
 import { prisma } from '../lib/prisma';
-import { Role, TeamMember } from '@prisma/client';
+import { Role, TeamMember, Prisma } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from '../lib/session';
 
@@ -97,4 +97,95 @@ export const getCurrentUser = async (
   }
 
   return session.user;
+};
+
+export const getPastResearchQueries = async (
+  teamId: string,
+  userQuery?: string
+) => {
+  const whereClause = userQuery
+    ? {
+        teamId,
+        userSearchQuery: {
+          contains: userQuery,
+          mode: 'insensitive',
+        },
+      }
+    : { teamId };
+
+  return await prisma.aIActivityLog.findMany({
+    where: whereClause,
+    select: {
+      id: true,
+      userSearchQuery: true,
+      overallQuery: true,
+      documentIds: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+};
+
+export const getMatchingPastRequest = async (
+  teamId: string,
+  userSearchQuery: string,
+  overallQuery: string,
+  documentIds: string[]
+) => {
+  return await prisma.aIActivityLog.findFirst({
+    where: {
+      teamId,
+      userSearchQuery,
+      overallQuery,
+      documentIds: {
+        equals: documentIds.sort(),
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      team: {
+        select: {
+          slug: true,
+        },
+      },
+    },
+  });
+};
+
+export const getPastFindings = async (
+  teamId: string,
+  userSearchQuery: string,
+  documentIds: string[]
+) => {
+  const pastRequests = await prisma.aIActivityLog.findMany({
+    where: {
+      teamId,
+      userSearchQuery,
+      documentIds: {
+        hasSome: documentIds,
+      },
+    },
+    select: {
+      documentIds: true,
+      individualFindings: true,
+    },
+  });
+
+  // Flatten findings
+  let findings: any[] = [];
+  for (const request of pastRequests) {
+    if (request.individualFindings && Array.isArray(request.individualFindings)) {
+      findings = findings.concat(
+        request.individualFindings.map((finding: any) => ({
+          ...finding,
+          documentId: finding.documentId,
+        }))
+      );
+    }
+  }
+
+  // Filter findings by the documentIds
+  findings = findings.filter((finding) => documentIds.includes(finding.documentId));
+
+  return findings;
 };

@@ -4,51 +4,79 @@ import { getVectorsForDocumentFromVectorDB } from './vectorization';
 import { Page } from 'openai/pagination';
 import { sendResearchCompleteEmail } from './email/sendResearchCompleteEmail';
 import { prisma } from './prisma';
+import { getPastFindings } from '../models/aiRequestQueue';
 
-export async function processResearchRequestQueue(teamId: string) {
+function removeDuplicateFindings(findings) {
+    return findings.filter((item, index, array) =>
+        array.findIndex(
+            (t) =>
+                t.documentId === item.documentId &&
+                t.pageContent === item.pageContent
+        ) === index
+    );
+}
+
+export async function processResearchRequestQueue(teamId: string, requestId?: string) {
     const pendingRequest = await prisma.aIRequestQueue.findFirst({
-        where: { teamId, status: 'in queue' },
+        where: {
+            teamId,
+            status: 'in queue',
+            ...(requestId && { id: requestId }),
+        },
         orderBy: { createdAt: 'asc' },
         include: {
-            user: true,  // Include user information to get email
-            team: true,  // Include team information to get slug
-        }
+            user: true,
+            team: true,
+        },
     });
 
     if (!pendingRequest) {
         return;
     }
 
-    const { id, documentIds, userSearchQuery, sequentialQuery } = pendingRequest;
+    const { id, documentIds, userSearchQuery, sequentialQuery, overallQuery } = pendingRequest;
 
-    await prisma.aIRequestQueue.update({
-        where: { id },
-        data: { status: `researching 0/${documentIds.length}` },
-    });
+    // 1. Fetch past individual findings that match the userSearchQuery and documents
+    let pastFindings = await getPastFindings(teamId, userSearchQuery, documentIds);
+    // 2. Remove any duplicates in the already-known findings
+    pastFindings = removeDuplicateFindings(pastFindings);
+    // 3. Figure out which doc IDs we haven’t analyzed yet
+    const existingDocumentIds = pastFindings.map((f) => f.documentId);
+    const newDocumentIds = documentIds.filter((docId) => !existingDocumentIds.includes(docId));
+    // 4. Gather all doc results (old + new)
+    let allFindings = pastFindings;
 
-    let allFindings = [];
+    // Only re-run analysis on the new documents
+    for (let i = 0; i < newDocumentIds.length; i++) {
+        const docId = newDocumentIds[i];
+        // getVectorsForDocumentFromVectorDB(...) fetches text chunks from your vector DB
+        const documentChunks = await getVectorsForDocumentFromVectorDB(docId, teamId);
 
-    for (let i = 0; i < documentIds.length; i++) {
-        const documentId = documentIds[i];
+        const findings = await handleDocumentSearch(
+            documentChunks,
+            userSearchQuery,
+            sequentialQuery,
+            teamId
+        );
 
-        // Retrieve document chunks using getVectorsForDocumentFromVectorDB
-        const documentChunks = await getVectorsForDocumentFromVectorDB(documentId, teamId);
-
-        const findings = await handleDocumentSearch(documentChunks, userSearchQuery, sequentialQuery, teamId);
-        allFindings = allFindings.concat(findings);
-
+        const findingsWithDocId = findings.map((f) => ({ ...f, documentId: docId }));
+        // Merge these new findings:
+        allFindings = allFindings.concat(findingsWithDocId);
+        // Update partial progress
         await prisma.aIRequestQueue.update({
             where: { id },
             data: {
-                status: `researching ${i + 1}/${documentIds.length}`,
+                status: `researching ${i + 1}/${newDocumentIds.length}`,
                 individualFindings: allFindings,
             },
         });
     }
+    // 5. Remove duplicates again from allFindings
+    allFindings = removeDuplicateFindings(allFindings);
+    // 6. Re-run the overall query (covers the case of changed overall summary)
+    const overallSummary = await createAISummary(allFindings, teamId, overallQuery, 'openAI');
 
-    // Set up a possibility to use gemini or azureOpenAI
-    const overallSummary = await createAISummary(allFindings, teamId, pendingRequest.overallQuery, 'openAI');
-
+    // Mark the queue as complete
     await prisma.aIRequestQueue.update({
         where: { id },
         data: {
@@ -57,11 +85,12 @@ export async function processResearchRequestQueue(teamId: string) {
         },
     });
 
+    // Insert a new entry in the AI Activity Log with old+new doc results
     const activityLog = await prisma.aIActivityLog.create({
         data: {
             id,
-            user: { connect: { id: pendingRequest.userId } }, // Use relation field
-            team: { connect: { id: pendingRequest.teamId } }, // Use relation field
+            user: { connect: { id: pendingRequest.userId } },
+            team: { connect: { id: pendingRequest.teamId } },
             documentIds: pendingRequest.documentIds,
             userSearchQuery: pendingRequest.userSearchQuery,
             overallQuery: pendingRequest.overallQuery,
@@ -74,8 +103,8 @@ export async function processResearchRequestQueue(teamId: string) {
         },
     });
 
-    // After creating activity log entry, send email notification
     try {
+        // Send email notification to let the user know their results are ready
         await sendResearchCompleteEmail(
             pendingRequest.user.email,
             activityLog.id,
@@ -83,9 +112,9 @@ export async function processResearchRequestQueue(teamId: string) {
         );
     } catch (error) {
         console.error('Failed to send research complete email:', error);
-        // Don't throw error here to avoid failing the whole process
     }
 
+    // Remove the request from the queue table since it's now in the activity log
     await prisma.aIRequestQueue.delete({
         where: { id },
     });

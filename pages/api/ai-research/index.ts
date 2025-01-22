@@ -4,6 +4,7 @@ import { getSession } from '../../../lib/session';
 import { getUserBySession } from 'models/user';
 import { createAIRequestQueue } from '../../../models/aiRequestQueue';
 import { processResearchRequestQueue } from '../../../lib/researchQueue';
+import { getMatchingPastRequest } from '../../../models/aiRequestQueue';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -23,36 +24,66 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { userId, teamId, documentIds, userSearchQuery, overallQuery, similarityScore, sequentialQuery, enhancedSearch } = req.body;
-    const user =  await getUserBySession(session);
-    
+    const {
+        teamId,
+        documentIds,
+        userSearchQuery,
+        overallQuery,
+        similarityScore,
+        sequentialQuery,
+        enhancedSearch,
+    } = req.body;
+
+    const user = await getUserBySession(session);
+
     if (!user || !teamId || !documentIds || !userSearchQuery) {
         return res.status(400).json({ message: 'Missing required fields' });
     }
 
     try {
-        // Use the createAIRequestQueue model function to create a new request
+        // Case 1: Check if there's a matching past request with the same queries and documents
+        const matchingRequest = await getMatchingPastRequest(
+            teamId,
+            userSearchQuery,
+            overallQuery,
+            documentIds
+        );
+
+        if (matchingRequest) {
+            // Case 1: Return the redirect URL with the correct id
+            console.log('Matching Request: ', matchingRequest);
+            return res.status(200).json({
+                redirectTo: `/teams/${matchingRequest.team.slug}/ai-result?id=${matchingRequest.id}`,
+            });
+        }
+
+        // Case 2: Create a new AI request queue entry
         const newRequest = await createAIRequestQueue({
-            userId : user.id,
+            userId: user.id,
             teamId,
             documentIds,
             userSearchQuery,
-            overallQuery: overallQuery || 'The following text is a summary of different outputs. Please provide an inclusive extended summary of the following answers:',
+            overallQuery:
+                overallQuery ||
+                'The following text is a summary of different outputs. Please provide an inclusive extended summary of the following answers:',
             similarityScore: similarityScore || 1.0,
-            sequentialQuery: sequentialQuery !== undefined ? sequentialQuery : true,
-            enhancedSearch: enhancedSearch !== undefined ? enhancedSearch : false,
-            status: 'in queue',  // Set initial status to 'in queue'
+            sequentialQuery:
+                sequentialQuery !== undefined ? sequentialQuery : true,
+            enhancedSearch:
+                enhancedSearch !== undefined ? enhancedSearch : false,
+            status: 'in queue',
             individualFindings: [],
             overallSummary: '',
         });
 
-        console.log(newRequest);
-        // Process the request queue for the team
-        processResearchRequestQueue(teamId);
+        // This logic covers Cases 2 and 3:
+        // The partial reuse of existing results for the same userSearchQuery
+        // and the new overall summary if overallQuery changed.
+        await processResearchRequestQueue(teamId, newRequest.id);
 
         return res.status(201).json(newRequest);
     } catch (error) {
-        console.error('Error creating research request:', error);
+        console.error('Error handling research request:', error);
         return res.status(500).json({ message: 'Internal Server Error' });
     }
 }

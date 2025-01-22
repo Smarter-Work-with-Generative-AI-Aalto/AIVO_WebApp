@@ -2,18 +2,18 @@ const nodemailer = require('nodemailer');
 
 async function testEmail() {
   const transporter = nodemailer.createTransport({
-    host: 'smtp.hostinger.com',
-    port: 465,
-    secure: true, // important for port 465
+    host: '<your smtp host>',
+    port: 587, // mostly 587 or 465
+    secure: false, // false for port 587
     auth: {
-      user: 'donotreply@flowbay.org',
-      pass: 'Aoa.uni123',
+      user: '<your email>',
+      pass: '<your password>',
     },
   });
 
   const info = await transporter.sendMail({
-    from: 'donotreply@flowbay.org',
-    to: 'alixchaudhry@gmail.com',
+    from: '<your email>',
+    to: '<recipient email>', 
     subject: 'SMTP Test',
     text: 'Hello from Nodemailer!',
     html: '<p>Hello from Nodemailer!</p>',
@@ -22,4 +22,4 @@ async function testEmail() {
   console.log('Message sent:', info.messageId);
 }
 
-testEmail().catch(console.error); 
+testEmail().catch(console.error);

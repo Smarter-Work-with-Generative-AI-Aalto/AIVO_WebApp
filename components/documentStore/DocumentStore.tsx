@@ -8,6 +8,28 @@ import Card from '@/components/shared/Card';
 import { TableBodyType } from '@/components/shared/table/TableBody';
 import UploadDocument from './UploadDocument';
 import DocumentTable from './DocumentTable';
+import { MultiStepLoader } from "../ui/multi-step-loader";
+
+const documentStoreLoadingStates = [
+    {
+        text: "Connecting to AIVO's cloud document store...",
+    },
+    {
+        text: "Fetching your documents...",
+    },
+    {
+        text: "Processing document formats and metadata...",
+    },
+    {
+        text: "Verifying the vector embeddings...",
+    },
+    {
+        text: "Compiling the documents list...",
+    },
+    {
+        text: "Ready for your to access in a moment...",
+    }
+];
 
 const DocumentStore = ({ team }: { team: any }) => {
     const { t } = useTranslation('common');
@@ -151,9 +173,12 @@ const DocumentStore = ({ team }: { team: any }) => {
             <Card className="mt-6">
                 <Card.Body>
                     {isLoading ? (
-                        <Loading />
-                    ) : documents.length === 0 ? (
-                        <p>{t('documentStore.noDocuments')}</p>
+                        <MultiStepLoader
+                            loadingStates={documentStoreLoadingStates}
+                            loading={isLoading}
+                            duration={2000}
+                            loop={true}
+                        />
                     ) : (
                         <DocumentTable
                             documents={documents}

@@ -12,6 +12,16 @@ import { Button, Tooltip } from 'react-daisyui';
 import SelectableDocumentTable from '../documentStore/SelectableDocumentTable';
 import toast from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/lib/components/ui/command";
+import { Search, History } from "lucide-react";
+import { MultiStepLoader } from "../ui/multi-step-loader";
 
 const ResearchComponent = ({ team }: { team: any }) => {
     const { t } = useTranslation('common');
@@ -26,6 +36,80 @@ const ResearchComponent = ({ team }: { team: any }) => {
     const [isTooltipTwoOpen, setIsTooltipTwoOpen] = useState(false);
     // const { data: session, status } = useSession(); // Hook from next-auth to get the session
     // const [userId, setUserId] = useState<string | null>(null);
+
+    const [pastQueries, setPastQueries] = useState<any[]>([]);
+    const [similarQueries, setSimilarQueries] = useState<any[]>([]);
+    const [isResearchLoading, setIsResearchLoading] = useState(false);
+
+    const loadingStates = [
+        {
+            text: "Your request is queued...",
+        },
+        {
+            text: "Connecting to AIVO's document store...",
+        },
+        {
+            text: "Retrieving your documents...",
+        },
+        {
+            text: "Setting up AI research environment...",
+        },
+        {
+            text: "Warming up the LLMs, Embeddings, etc...",
+        },
+        {
+            text: "Preparing document analysis tools...",
+        },
+        {
+            text: "Almost ready...",
+        }
+    ];
+
+    const researchLoadingStates = [
+        {
+            text: "Initializing AI Research process...",
+        },
+        {
+            text: "Digesting your documents...",
+        },
+        {
+            text: "Analyzing content with advanced LLMs...",
+        },
+        {
+            text: "Generating comprehensive researchinsights...",
+        },
+        {
+            text: "Compiling individual research results...",
+        },
+        {
+            text: "Off to AI for overall research results...",
+        },
+        {
+            text: "Finalizing the research results...",
+        },
+        {
+            text: "Just getting done...",
+        }
+    ];
+
+    useEffect(() => {
+        const fetchPastQueries = async () => {
+            try {
+                const response = await fetch(`/api/ai-research/past-queries?teamId=${team.id}`);
+                if (!response.ok) {
+                    //toast.error("Our systems are overworked... Unable to get past queries");
+                    console.log("Failed to fetch past queries");
+                    throw Error;
+                }
+                const data = await response.json();
+                setPastQueries(data);
+            } catch (error) {
+                console.error('Error fetching past queries:', error);
+            }
+        };
+
+        fetchPastQueries();
+    }, [team.id]);
 
     useEffect(() => {
         const loadDocuments = async () => {
@@ -46,6 +130,25 @@ const ResearchComponent = ({ team }: { team: any }) => {
         };
         loadDocuments();
     }, [team.id]);
+
+    useEffect(() => {
+        const fetchSimilarQueries = async () => {
+            if (query.length < 3) return; // Fetch only if query is longer than 3 characters
+            try {
+                const response = await fetch(`/api/ai-research/past-queries?teamId=${team.id}&query=${query}`);
+                if (!response.ok) {
+                    console.log("Failed to fetch similar queries");
+                    return;
+                }
+                const data = await response.json();
+                setSimilarQueries(data);
+            } catch (error) {
+                console.log('Error fetching similar queries:', error);
+            }
+        };
+
+        fetchSimilarQueries();
+    }, [query, team.id]);
 
     // useEffect(() => {
     //     const fetchUserId = async () => {
@@ -112,18 +215,24 @@ const ResearchComponent = ({ team }: { team: any }) => {
         ));
     };
 
-    const handleSubmit = async () => {
-        // if (!userId) {
-        //     toast.error('User ID not found');
-        //     return;
-        // }
+    const handlePastQuerySelect = async (selectedQuery: string) => {
+        const pastQuery = pastQueries.find(query => query.userSearchQuery === selectedQuery);
+        if (pastQuery) {
+            setQuery(pastQuery.userSearchQuery);
+            setOverallQuery(pastQuery.overallQuery);
+            setSelectedDocuments(pastQuery.documentIds || []);
 
+            // Optionally, you can also fetch detailed info if needed
+        }
+    };
+
+    const handleSubmit = async () => {
         if (!query || selectedDocuments.length === 0) {
-            toast.error('Please enter a query and select at least one document');
+            toast.error(t('please-enter-a-query-and-select-at-least-one-document'));
             return;
         }
 
-        setIsLoading(true);
+        setIsResearchLoading(true);
         try {
             const response = await fetch('/api/ai-research', {
                 method: 'POST',
@@ -133,27 +242,29 @@ const ResearchComponent = ({ team }: { team: any }) => {
                     teamId: team.id,
                     documentIds: selectedDocuments,
                     userSearchQuery: query,
-                    overallQuery: overallQuery || 'Create a summary based on the following findings:',
+                    overallQuery: overallQuery || "The following text is a summary of different outputs. Please provide an inclusive extended summary of the following answers:",
                     similarityScore: 0.8,
                     sequentialQuery: true,
                     enhancedSearch: false,
                 }),
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                toast.error(`Failed to submit research request`);
+                toast.error(t('failed-to-submit-research-request'));
                 throw new Error('Failed to submit research request');
             }
 
-            toast.success(`Research request submitted successfully`);
-
-            // Redirect to activity log after successful submission
-            window.location.href = `/teams/${team.slug}/activity-log`;
-
+            if (data.redirectTo) {
+                window.location.href = data.redirectTo;
+            } else {
+                toast.success(t('research-request-submitted-successfully'));
+                window.location.href = `/teams/${team.slug}/activity-log`;
+            }
         } catch (err) {
             setError(String(err));
-        } finally {
-            setIsLoading(false);
+            setIsResearchLoading(false);
         }
     };
 
@@ -183,7 +294,40 @@ const ResearchComponent = ({ team }: { team: any }) => {
                             </div>
                         </h2>
                         <div>
-                            <label className="input input-bordered flex items-center gap-2 rounded-full">
+                            <Command className="rounded-lg border shadow-md w-full bg-white">
+                                <div className="flex items-center border-b px-3">
+                                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                                    <input
+                                        type="text"
+                                        value={query}
+                                        onChange={(e) => setQuery(e.target.value)}
+                                        placeholder={t('Search...')}
+                                        className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                                    />
+                                </div>
+                                <CommandList className="max-h-[200px]">
+                                    <CommandEmpty>{t('Type to discover similar suggestions...')}</CommandEmpty>
+                                    {similarQueries.length > 0 && (
+                                        <CommandGroup
+                                            heading={t('Search Suggestions')}
+                                            className="overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:p-[1%]"
+                                        >
+                                            {similarQueries.slice(0, 5).map((query, index) => (
+                                                <CommandItem
+                                                    key={index}
+                                                    value={query.userSearchQuery}
+                                                    onSelect={(value) => handlePastQuerySelect(value)}
+                                                    className="cursor-pointer mb-[1%]"
+                                                >
+                                                    <History className="mr-2 h-4 w-4 shrink-0" strokeWidth={1} />
+                                                    <span>{query.userSearchQuery}</span>
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    )}
+                                </CommandList>
+                            </Command>
+                            {/* <label className="input input-bordered flex items-center gap-2 rounded-full">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     viewBox="0 0 16 16"
@@ -196,6 +340,14 @@ const ResearchComponent = ({ team }: { team: any }) => {
                                 </svg>
                                 <input name="search" type="text" className="grow" placeholder="Search..." onChange={(e) => setQuery(e.target.value)} />
                             </label>
+                            <select onChange={(e) => handlePastQuerySelect(e.target.value)} className="select select-bordered w-full mt-2">
+                                <option value="">{t('Select a past query')}</option>
+                                {similarQueries.map((query, index) => (
+                                    <option key={index} value={query.userSearchQuery}>
+                                        {query.userSearchQuery}
+                                    </option>
+                                ))}
+                            </select> */}
                         </div>
                     </Card.Body>
                 </div>
@@ -266,7 +418,24 @@ const ResearchComponent = ({ team }: { team: any }) => {
                     </Button>
                 </div>
 
-                {loading && <Loading />}
+                {loading && (
+                    <MultiStepLoader
+                        loadingStates={loadingStates}
+                        loading={loading}
+                        duration={3000}
+                        loop={true}
+                    />
+                )}
+
+                {isResearchLoading && (
+                    <MultiStepLoader
+                        loadingStates={researchLoadingStates}
+                        loading={isResearchLoading}
+                        duration={2500}
+                        loop={true}
+                    />
+                )}
+
                 {error && <Error message={error} />}
 
                 <dialog id="document_modal" className="modal modal-bottom sm:modal-middle">
@@ -277,7 +446,7 @@ const ResearchComponent = ({ team }: { team: any }) => {
                             selectedDocuments={selectedDocuments}
                             onSelect={handleDocumentSelect}
                         />
-                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => document.getElementById('document_modal')?.close()}>✕</button>
                         <div className="modal-action">
                             <button className="btn btn-sm" onClick={() => handleSelectInModal(selectedDocuments)}>{t('select')}</button>
                         </div>
