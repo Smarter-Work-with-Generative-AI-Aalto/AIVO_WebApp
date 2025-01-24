@@ -22,6 +22,20 @@ import {
 } from "@/lib/components/ui/command";
 import { Search, History } from "lucide-react";
 import { MultiStepLoader } from "../ui/multi-step-loader";
+import {
+    Drawer,
+    DrawerTrigger,
+    DrawerPortal,
+    DrawerClose,
+    DrawerContent,
+    DrawerDescription,
+    DrawerFooter,
+    DrawerHeader,
+    DrawerOverlay,
+    DrawerTitle,
+} from "@/lib/components/ui/drawer";
+import { ScrollArea, ScrollBar } from "@/lib/components/ui/scroll-area";
+import { ScrollAreaCorner } from '@radix-ui/react-scroll-area';
 
 const ResearchComponent = ({ team }: { team: any }) => {
     const { t } = useTranslation('common');
@@ -34,9 +48,9 @@ const ResearchComponent = ({ team }: { team: any }) => {
     const [isCollapsed, setIsCollapsed] = useState(true);
     const [isTooltipOpen, setIsTooltipOpen] = useState(false);
     const [isTooltipTwoOpen, setIsTooltipTwoOpen] = useState(false);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     // const { data: session, status } = useSession(); // Hook from next-auth to get the session
     // const [userId, setUserId] = useState<string | null>(null);
-
     const [pastQueries, setPastQueries] = useState<any[]>([]);
     const [similarQueries, setSimilarQueries] = useState<any[]>([]);
     const [isResearchLoading, setIsResearchLoading] = useState(false);
@@ -91,6 +105,20 @@ const ResearchComponent = ({ team }: { team: any }) => {
             text: "Just getting done...",
         }
     ];
+
+    useEffect(() => {
+        if (isDrawerOpen) {
+            document.body.classList.add('drawer-open', 'drawer-background-black');
+        } else {
+            document.body.classList.remove('drawer-open', 'drawer-background-black');
+        }
+
+        // Cleanup in case the component unmounts while the drawer is open
+        return () => {
+            document.body.classList.remove('drawer-open', 'drawer-background-black');
+        };
+    }, [isDrawerOpen]);
+
 
     useEffect(() => {
         const fetchPastQueries = async () => {
@@ -226,12 +254,17 @@ const ResearchComponent = ({ team }: { team: any }) => {
         }
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = () => {
         if (!query || selectedDocuments.length === 0) {
             toast.error(t('please-enter-a-query-and-select-at-least-one-document'));
             return;
         }
 
+        setIsDrawerOpen(true);
+    };
+
+    const proceedWithResearch = async () => {
+        setIsDrawerOpen(false);
         setIsResearchLoading(true);
         try {
             const response = await fetch('/api/ai-research', {
@@ -271,6 +304,7 @@ const ResearchComponent = ({ team }: { team: any }) => {
     const visibleDocuments = documents.slice(0, 5);
 
     return (
+
         <div className="flex flex-col pb-6">
             <h2 className="text-xl font-semibold mb-2 text-center">
                 {t('AI Research')}
@@ -317,7 +351,7 @@ const ResearchComponent = ({ team }: { team: any }) => {
                                                     key={index}
                                                     value={query.userSearchQuery}
                                                     onSelect={(value) => handlePastQuerySelect(value)}
-                                                    className="cursor-pointer mb-[1%]"
+                                                    className="cursor-pointer mb-[1%] hover:bg-slate-300"
                                                 >
                                                     <History className="mr-2 h-4 w-4 shrink-0" strokeWidth={1} />
                                                     <span>{query.userSearchQuery}</span>
@@ -354,25 +388,30 @@ const ResearchComponent = ({ team }: { team: any }) => {
                 <div className="card w-full border-rounded bg-neutral-100 mb-4 mt-4">
                     <Card.Body>
                         <h2 className="text-xl font-semibold">{t('research-step-two')}</h2>
-                        <div className="flex gap-2 overflow-x-auto pb-4">
-                            {visibleDocuments.map((doc) => (
+                        <ScrollArea className="w-full max-w-full whitespace-nowrap rounded-md border bg-white ScrollAreaRoot">
+                            <div className="flex max-w-full space-x-4 p-4">
+                                {visibleDocuments.map((doc) => (
+                                    <button
+                                        key={doc.id}
+                                        onClick={() => handleDocumentSelect(doc.id)}
+                                        className={`border rounded p-2 flex items-center gap-2 ${selectedDocuments.includes(doc.id) ? 'bg-gray-200' : 'border-gray-300'}`}
+                                    >
+                                        {getFileIcon(doc.type)}
+                                        <span className="block text-center text-xs">{truncateFileName(doc.title)}</span>
+                                    </button>
+                                ))}
                                 <button
-                                    key={doc.id}
-                                    onClick={() => handleDocumentSelect(doc.id)}
-                                    className={`border rounded p-2 flex items-center gap-2 ${selectedDocuments.includes(doc.id) ? 'bg-gray-200' : 'border-gray-300'}`}
+                                    className="border rounded p-2 flex items-center gap-2"
+                                    onClick={() => document.getElementById('document_modal')?.showModal()}
                                 >
-                                    {getFileIcon(doc.type)}
-                                    <span className="block text-center text-xs">{truncateFileName(doc.title)}</span>
+                                    <IoOpenOutline className="text-4xl" />
+                                    <span className="block text-center text-xs font-bold">{t('view-more')}</span>
                                 </button>
-                            ))}
-                            <button
-                                className="border rounded p-2 flex items-center gap-2"
-                                onClick={() => document.getElementById('document_modal')?.showModal()}
-                            >
-                                <IoOpenOutline className="text-4xl" />
-                                <span className="block text-center text-xs font-bold">{t('view-more')}</span>
-                            </button>
-                        </div>
+                            </div>
+                            <ScrollBar orientation="horizontal" className="ScrollAreaScrollbar ScrollAreaScrollbar:hover" />
+                            <ScrollAreaCorner className="ScrollAreaCorner" />
+                            
+                        </ScrollArea>
                         <div className="flex justify-center">
                             <Button className="btn btn-secondary btn-sm btn-block rounded-full" onClick={handleSelectAllDocuments}>
                                 {selectedDocuments.length === documents.length ? t('deselect-all-documents') : t('search-all-documents')}
@@ -413,9 +452,41 @@ const ResearchComponent = ({ team }: { team: any }) => {
                 </div>
 
                 <div className="mt-8">
-                    <Button color="neutral" className="transition ease-in-out bg-neutral-500 hover:-translate-y-1 hover:scale-110 hover:bg-neutral-950 duration-300 rounded-full shadow-xl border-none" fullWidth onClick={handleSubmit} disabled={!query || selectedDocuments.length === 0}>
-                        {t('research')}
-                    </Button>
+                    <Drawer open={isDrawerOpen} onOpenChange={(open) => setIsDrawerOpen(open)}>
+                        <DrawerTrigger asChild>
+                            <Button color="neutral" className="transition ease-in-out bg-neutral-500 hover:-translate-y-1 hover:scale-110 hover:bg-neutral-950 duration-300 rounded-full shadow-xl border-none" fullWidth onClick={handleSubmit} disabled={!query || selectedDocuments.length === 0}>
+                                {t('research')}
+                            </Button>
+                        </DrawerTrigger>
+                        <DrawerOverlay className="fixed inset-0 z-50 bg-black/60">
+                            <DrawerContent className="bg-white bottom-0 left-0 right-0 rounded-tr-2xl rounded-tl-2xl">
+                                <div className="mx-auto w-full max-w-sm">
+                                    <DrawerHeader>
+                                        <DrawerTitle>{t('Research Request')}</DrawerTitle>
+                                        <DrawerDescription>
+                                            {t('you-are-about-to-process-a-research-operation-on')}
+                                        </DrawerDescription>
+                                    </DrawerHeader>
+                                    <div className="p-4 pb-0">
+                                        <ul>
+                                            {selectedDocuments.map((docId) => {
+                                                const doc = documents.find((d) => d.id === docId);
+                                                return (
+                                                    <li key={docId}>{doc ? doc.title : docId}</li>
+                                                );
+                                            })}
+                                        </ul>
+                                    </div>
+                                    <DrawerFooter>
+                                        <Button color="neutral" onClick={proceedWithResearch}>{t('Proceed')}</Button>
+                                        <DrawerClose asChild>
+                                            <Button variant="outline">{t('Cancel')}</Button>
+                                        </DrawerClose>
+                                    </DrawerFooter>
+                                </div>
+                            </DrawerContent>
+                        </DrawerOverlay>
+                    </Drawer>
                 </div>
 
                 {loading && (

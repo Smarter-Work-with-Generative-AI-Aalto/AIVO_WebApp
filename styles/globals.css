@@ -140,6 +140,28 @@ a {
   display: none;
 }
 
+.drawer-background-black {
+  background-color: black;
+}
+
+.drawer-open #__next {
+  background-color: white;
+  transform-origin: center top;
+  transition-property: transform, border-radius;
+  transition-duration: 0.5s;
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  border-radius: 8px;
+  overflow: hidden;
+  transform: scale(0.96632) translate3d(0, calc(env(safe-area-inset-top) + 14px), 0);
+}
+
+ /* Ensure normal state has transition properties for smooth animation */
+ #__next {
+  transition-property: transform, border-radius;
+  transition-duration: 0.5s;
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -147,4 +169,63 @@ a {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.ScrollAreaRoot {
+	border-radius: 4px;
+	overflow: hidden;
+	box-shadow: 0 2px 10px var(gray);
+	background-color: white;
+	--scrollbar-size:10px;
+}
+
+.ScrollAreaViewport {
+	width: 100%;
+	height: 100%;
+	border-radius: inherit;
+}
+
+.ScrollAreaScrollbar {
+	display: flex;
+	/* ensures no selection */
+	user-select: none;
+	/* disable browser handling of all panning and zooming gestures on touch devices */
+	touch-action: none;
+	padding: 2px;
+	background: white;
+	transition: background 160ms ease-out;
+}
+.ScrollAreaScrollbar:hover {
+	background: white;
+}
+.ScrollAreaScrollbar[data-orientation="vertical"] {
+	width: var(--scrollbar-size);
+}
+.ScrollAreaScrollbar[data-orientation="horizontal"] {
+	flex-direction: column;
+	height: var(--scrollbar-size);
+}
+
+.ScrollAreaThumb {
+	flex: 1;
+	background: #d1d5db;
+	border-radius: var(--scrollbar-size);
+	position: relative;
+  color: #000;
+}
+/* increase target size for touch devices https://www.w3.org/WAI/WCAG21/Understanding/target-size.html */
+.ScrollAreaThumb::before {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 100%;
+	height: 100%;
+	min-width: 44px;
+	min-height: 44px;
+}
+
+.ScrollAreaCorner {
+	background: white;
 }
