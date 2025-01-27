@@ -8,7 +8,7 @@ import Loading from '../shared/Loading';
 import Card from '../shared/Card';
 import { BsFiletypePdf, BsFiletypeTxt, BsFiletypeDoc, BsFiletypePpt, BsFiletypeCsv, BsFileEarmarkText } from "react-icons/bs";
 import { IoOpenOutline } from "react-icons/io5";
-import { Button, Tooltip } from 'react-daisyui';
+import { Button } from 'react-daisyui';
 import SelectableDocumentTable from '../documentStore/SelectableDocumentTable';
 import toast from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
@@ -20,7 +20,9 @@ import {
     CommandItem,
     CommandList,
 } from "@/lib/components/ui/command";
-import { Search, History } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/lib/components/ui/tooltip";
+import { NumberTicker } from "@/lib/components/ui/number-ticker";
+import { Search, History, FileText, Zap, Droplet, Clock, DollarSign, Recycle, Hash, Info, ExternalLink } from "lucide-react";
 import { MultiStepLoader } from "../ui/multi-step-loader";
 import {
     Drawer,
@@ -54,6 +56,14 @@ const ResearchComponent = ({ team }: { team: any }) => {
     const [pastQueries, setPastQueries] = useState<any[]>([]);
     const [similarQueries, setSimilarQueries] = useState<any[]>([]);
     const [isResearchLoading, setIsResearchLoading] = useState(false);
+    const [metrics, setMetrics] = useState<{
+        electricityUsage: number;
+        waterConsumption: number;
+        totalTokens: number;
+        processingTime: number;
+        totalCost: number;
+        recycledDataPercentage: number;
+    } | null>(null);
 
     const loadingStates = [
         {
@@ -109,6 +119,10 @@ const ResearchComponent = ({ team }: { team: any }) => {
     useEffect(() => {
         if (isDrawerOpen) {
             document.body.classList.add('drawer-open', 'drawer-background-black');
+            // Calculate metrics when the drawer is opened
+            // Use the defaultMetrics as a fallback
+            const calculatedMetrics = calculateMetrics(selectedDocuments, query, overallQuery, pastQueries, team.id) || metrics;
+            setMetrics(calculatedMetrics);
         } else {
             document.body.classList.remove('drawer-open', 'drawer-background-black');
         }
@@ -254,18 +268,95 @@ const ResearchComponent = ({ team }: { team: any }) => {
         }
     };
 
-    const handleSubmit = () => {
-        if (!query || selectedDocuments.length === 0) {
-            toast.error(t('please-enter-a-query-and-select-at-least-one-document'));
-            return;
-        }
+    const handleSubmit = async () => {
+        if (!query || selectedDocuments.length === 0) return;
 
-        setIsDrawerOpen(true);
+        try {
+            const calculatedMetrics = await calculateMetrics(
+                selectedDocuments,
+                query,
+                overallQuery,
+                similarQueries,
+                team.id
+            );
+            setMetrics(calculatedMetrics);
+            setIsDrawerOpen(true);
+        } catch (error) {
+            console.error('Error calculating metrics:', error);
+            setError(String(error));
+        }
+    };
+
+    // Function to calculate various metrics for AI research
+    const calculateMetrics = async (documentIds: string[], individualQuery: string, overallQuery: string, pastQueries: any[], teamId: string) => {
+        const tokensPerWord = 1.5;
+        const kWhPer150Tokens = 0.14;
+        const waterPer150Tokens = 0.5;
+        const costPerMillionInputTokens = 2.50;
+        const costPerMillionOutputTokens = 10.00;
+
+        let totalTokens = 0;
+
+        try {
+            const response = await fetch(`/api/documents/chunks?documentIds=${documentIds.join(',')}`);
+            if (!response.ok) {
+                console.error('Failed to fetch document chunks data');
+                throw new Error('Failed to fetch document chunks');
+            }
+            const chunks = await response.json();
+
+            chunks.forEach(chunk => {
+                console.log('Chunk metadata:', chunk.metadata); // Log the metadata structure
+
+                // Iterate over the metadata array directly
+                if (Array.isArray(chunk.metadata)) {
+                    const wordCountEntry = chunk.metadata.find(meta => meta.key === 'wordCount');
+                    const wordCount = wordCountEntry ? parseInt(wordCountEntry.value, 10) : 0;
+                    totalTokens += wordCount * tokensPerWord;
+                } else {
+                    console.warn('Chunk metadata is not an array', chunk.metadata);
+                }
+            });
+
+            const overallTokens = overallQuery.split(/\s+/).length * tokensPerWord;
+            totalTokens += overallTokens;
+
+            const electricityUsage = (totalTokens / 150) * kWhPer150Tokens;
+            const waterConsumption = (totalTokens / 150) * waterPer150Tokens;
+            const inputCost = (totalTokens / 1_000_000) * costPerMillionInputTokens;
+            const outputCost = (overallTokens / 1_000_000) * costPerMillionOutputTokens;
+            const totalCost = inputCost + outputCost;
+            const processingTime = totalTokens / 1000;
+
+            const previouslySearchedDocuments = pastQueries.reduce((acc, query) => {
+                if (query.userSearchQuery === individualQuery && query.overallQuery === overallQuery) {
+                    acc.push(...query.documentIds);
+                }
+                return acc;
+            }, []);
+
+            const uniquePreviouslySearchedDocuments = [...new Set(previouslySearchedDocuments)];
+            const recycledDataCount = documentIds.filter(docId => uniquePreviouslySearchedDocuments.includes(docId)).length;
+            const recycledDataPercentage = (recycledDataCount / documentIds.length) * 100;
+
+            return {
+                electricityUsage,
+                waterConsumption,
+                totalTokens,
+                processingTime,
+                totalCost,
+                recycledDataPercentage
+            };
+        } catch (error) {
+            console.error('Error calculating metrics:', error);
+            throw error;
+        }
     };
 
     const proceedWithResearch = async () => {
         setIsDrawerOpen(false);
         setIsResearchLoading(true);
+
         try {
             const response = await fetch('/api/ai-research', {
                 method: 'POST',
@@ -410,7 +501,7 @@ const ResearchComponent = ({ team }: { team: any }) => {
                             </div>
                             <ScrollBar orientation="horizontal" className="ScrollAreaScrollbar ScrollAreaScrollbar:hover" />
                             <ScrollAreaCorner className="ScrollAreaCorner" />
-                            
+
                         </ScrollArea>
                         <div className="flex justify-center">
                             <Button className="btn btn-secondary btn-sm btn-block rounded-full" onClick={handleSelectAllDocuments}>
@@ -454,7 +545,13 @@ const ResearchComponent = ({ team }: { team: any }) => {
                 <div className="mt-8">
                     <Drawer open={isDrawerOpen} onOpenChange={(open) => setIsDrawerOpen(open)}>
                         <DrawerTrigger asChild>
-                            <Button color="neutral" className="transition ease-in-out bg-neutral-500 hover:-translate-y-1 hover:scale-110 hover:bg-neutral-950 duration-300 rounded-full shadow-xl border-none" fullWidth onClick={handleSubmit} disabled={!query || selectedDocuments.length === 0}>
+                            <Button
+                                color="neutral"
+                                className="transition ease-in-out bg-neutral-500 hover:-translate-y-1 hover:scale-110 hover:bg-neutral-950 duration-300 rounded-full shadow-xl border-none"
+                                fullWidth
+                                onClick={handleSubmit}
+                                disabled={!query || selectedDocuments.length === 0}
+                            >
                                 {t('research')}
                             </Button>
                         </DrawerTrigger>
@@ -462,23 +559,304 @@ const ResearchComponent = ({ team }: { team: any }) => {
                             <DrawerContent className="bg-white bottom-0 left-0 right-0 rounded-tr-2xl rounded-tl-2xl">
                                 <div className="mx-auto w-full max-w-sm">
                                     <DrawerHeader>
-                                        <DrawerTitle>{t('Research Request')}</DrawerTitle>
-                                        <DrawerDescription>
-                                            {t('you-are-about-to-process-a-research-operation-on')}
+                                        <DrawerTitle className="text-xl font-bold">{t('Research Analysis')}</DrawerTitle>
+                                        <DrawerDescription className="text-muted-foreground">
+                                            {t('Review the estimated resource consumption and environmental impact of your research query 🍃')}
                                         </DrawerDescription>
                                     </DrawerHeader>
-                                    <div className="p-4 pb-0">
-                                        <ul>
-                                            {selectedDocuments.map((docId) => {
-                                                const doc = documents.find((d) => d.id === docId);
-                                                return (
-                                                    <li key={docId}>{doc ? doc.title : docId}</li>
-                                                );
-                                            })}
-                                        </ul>
-                                    </div>
+
+                                    {metrics && (
+                                        <div className="p-6">
+                                            <div className="space-y-2">
+                                                {/* Documents Selected */}
+                                                <TooltipProvider delayDuration={0}>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+                                                                <div className="flex items-center gap-2">
+                                                                    <FileText className="h-4 w-4 text-slate-500" />
+                                                                    <span className="text-sm font-medium">{t('Documents Selected')}</span>
+                                                                </div>
+                                                                <NumberTicker
+                                                                    value={selectedDocuments?.length || 0}
+                                                                    className="text-sm font-bold"
+                                                                    decimalPlaces={0}
+                                                                />
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="flex gap-3 p-3 max-w-xs bg-slate-200" onPointerEnter={(e) => e.preventDefault()}>
+                                                            <Info
+                                                                className="mt-0.5 shrink-0 text-slate-400"
+                                                                size={16}
+                                                                strokeWidth={2}
+                                                                aria-hidden="true"
+                                                            />
+                                                            <div className="space-y-1">
+                                                                <p className="text-[13px] font-medium">
+                                                                    {t('Document Selection')}
+                                                                </p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {t('The total number of documents selected for analysis. Each document will be processed to generate comprehensive research insights.')}
+                                                                </p>
+                                                            </div>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+
+                                                {/* Electricity Usage */}
+                                                <TooltipProvider delayDuration={0}>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Zap className="h-4 w-4 text-yellow-500" />
+                                                                    <span className="text-sm font-medium">{t('Electricity Usage')}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <NumberTicker
+                                                                        value={metrics?.electricityUsage || 0}
+                                                                        className="text-sm font-bold"
+                                                                        decimalPlaces={2}
+                                                                    />
+                                                                    <span className="text-xs text-slate-500">kWh</span>
+                                                                </div>
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="flex gap-3 p-3 max-w-xs bg-slate-200" onPointerEnter={(e) => e.preventDefault()}>
+                                                            <Info
+                                                                className="mt-0.5 shrink-0 text-slate-400"
+                                                                size={16}
+                                                                strokeWidth={2}
+                                                                aria-hidden="true"
+                                                            />
+                                                            <div className="space-y-1">
+                                                                <p className="text-[13px] font-medium">
+                                                                    {t('Electricity Consumption')}
+                                                                </p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {t('This represents the estimated amount of electricity consumed during the processing of your documents. We use this metric to track and optimize our environmental impact.')}
+                                                                </p>
+                                                                <a 
+                                                                    href="https://www.washingtonpost.com/technology/2024/09/18/energy-ai-use-electricity-water-data-centers/"
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-800 underline mt-2"
+                                                                >
+                                                                    {t('Read More')} 
+                                                                    <ExternalLink size={12} />
+                                                                </a>
+                                                            </div>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+
+                                                {/* Water Consumption */}
+                                                <TooltipProvider delayDuration={0}>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Droplet className="h-4 w-4 text-blue-500" />
+                                                                    <span className="text-sm font-medium">{t('Water Consumption')}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <NumberTicker
+                                                                        value={metrics?.waterConsumption || 0}
+                                                                        className="text-sm font-bold"
+                                                                        decimalPlaces={2}
+                                                                    />
+                                                                    <span className="text-xs text-slate-500">L</span>
+                                                                </div>
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="flex gap-3 p-3 max-w-xs bg-slate-200" onPointerEnter={(e) => e.preventDefault()}>
+                                                            <Info
+                                                                className="mt-0.5 shrink-0 text-slate-400"
+                                                                size={16}
+                                                                strokeWidth={2}
+                                                                aria-hidden="true"
+                                                            />
+                                                            <div className="space-y-1">
+                                                                <p className="text-[13px] font-medium">
+                                                                    {t('Water Usage')}
+                                                                </p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {t('The estimated water consumption for cooling the servers during document processing. This helps us monitor our water footprint.')}
+                                                                </p>
+                                                                <a 
+                                                                    href="https://www.washingtonpost.com/technology/2024/09/18/energy-ai-use-electricity-water-data-centers/"
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-800 underline mt-2"
+                                                                >
+                                                                    {t('Read More')} 
+                                                                    <ExternalLink size={12} />
+                                                                </a>
+                                                            </div>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+
+                                                {/* Total Tokens */}
+                                                <TooltipProvider delayDuration={0}>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Hash className="h-4 w-4 text-purple-500" />
+                                                                    <span className="text-sm font-medium">{t('Total Tokens')}</span>
+                                                                </div>
+                                                                <NumberTicker
+                                                                    value={metrics?.totalTokens || 0}
+                                                                    className="text-sm font-bold"
+                                                                    decimalPlaces={0}
+                                                                />
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="flex gap-3 p-3 max-w-xs bg-slate-200" onPointerEnter={(e) => e.preventDefault()}>
+                                                            <Info
+                                                                className="mt-0.5 shrink-0 text-slate-400"
+                                                                size={16}
+                                                                strokeWidth={2}
+                                                                aria-hidden="true"
+                                                            />
+                                                            <div className="space-y-1">
+                                                                <p className="text-[13px] font-medium">
+                                                                    {t('Token Processing')}
+                                                                </p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {t('The total number of tokens processed across all selected documents. Tokens are the basic units of text that the AI model processes.')}
+                                                                </p>
+                                                            </div>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+
+                                                {/* Processing Time */}
+                                                <TooltipProvider delayDuration={0}>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Clock className="h-4 w-4 text-slate-500" />
+                                                                    <span className="text-sm font-medium">{t('Processing Time')}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <NumberTicker
+                                                                        value={metrics?.processingTime || 0}
+                                                                        className="text-sm font-bold"
+                                                                        decimalPlaces={2}
+                                                                    />
+                                                                    <span className="text-xs text-slate-500">s</span>
+                                                                </div>
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="flex gap-3 p-3 max-w-xs bg-slate-200" onPointerEnter={(e) => e.preventDefault()}>
+                                                            <Info
+                                                                className="mt-0.5 shrink-0 text-slate-400"
+                                                                size={16}
+                                                                strokeWidth={2}
+                                                                aria-hidden="true"
+                                                            />
+                                                            <div className="space-y-1">
+                                                                <p className="text-[13px] font-medium">
+                                                                    {t('Processing Time')}
+                                                                </p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {t('Estimated time to process all documents')}
+                                                                </p>
+                                                            </div>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+
+                                                {/* Total Cost */}
+                                                <TooltipProvider delayDuration={0}>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+                                                                <div className="flex items-center gap-2">
+                                                                    <DollarSign className="h-4 w-4 text-green-500" />
+                                                                    <span className="text-sm font-medium">{t('LLM Cost')}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="text-xs text-slate-500">$</span>
+                                                                    <NumberTicker
+                                                                        value={metrics?.totalCost || 0}
+                                                                        className="text-sm font-bold"
+                                                                        decimalPlaces={2}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="flex gap-3 p-3 max-w-xs bg-slate-200" onPointerEnter={(e) => e.preventDefault()}>
+                                                            <Info
+                                                                className="mt-0.5 shrink-0 text-slate-400"
+                                                                size={16}
+                                                                strokeWidth={2}
+                                                                aria-hidden="true"
+                                                            />
+                                                            <div className="space-y-1">
+                                                                <p className="text-[13px] font-medium">
+                                                                    {t('LLM Cost')}
+                                                                </p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {t('Estimated cost for processing')}
+                                                                </p>
+                                                            </div>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+
+                                                {/* Recycled Data */}
+                                                <TooltipProvider delayDuration={0}>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Recycle className="h-4 w-4 text-green-500" />
+                                                                    <span className="text-sm font-medium">{t('Recycled Data')}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <NumberTicker
+                                                                        value={metrics?.recycledDataPercentage || 0}
+                                                                        className="text-sm font-bold"
+                                                                        decimalPlaces={2}
+                                                                    />
+                                                                    <span className="text-xs text-slate-500">%</span>
+                                                                </div>
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="flex gap-3 p-3 max-w-xs bg-slate-200" onPointerEnter={(e) => e.preventDefault()}>
+                                                            <Info
+                                                                className="mt-0.5 shrink-0 text-slate-400"
+                                                                size={16}
+                                                                strokeWidth={2}
+                                                                aria-hidden="true"
+                                                            />
+                                                            <div className="space-y-1">
+                                                                <p className="text-[13px] font-medium">
+                                                                    {t('Recycled Data')}
+                                                                </p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {t('Percentage of previously processed data being reused')}
+                                                                </p>
+                                                            </div>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <DrawerFooter>
-                                        <Button color="neutral" onClick={proceedWithResearch}>{t('Proceed')}</Button>
+                                        <Button
+                                            color="neutral"
+                                            onClick={proceedWithResearch}
+                                            className="bg-slate-900 text-white hover:bg-slate-800"
+                                        >
+                                            {t('Proceed with Analysis')}
+                                        </Button>
                                         <DrawerClose asChild>
                                             <Button variant="outline">{t('Cancel')}</Button>
                                         </DrawerClose>
