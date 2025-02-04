@@ -56,6 +56,7 @@ const ResearchComponent = ({ team }: { team: any }) => {
     const [pastQueries, setPastQueries] = useState<any[]>([]);
     const [similarQueries, setSimilarQueries] = useState<any[]>([]);
     const [isResearchLoading, setIsResearchLoading] = useState(false);
+    const [metricsLoading, setMetricsLoading] = useState(false);
     const [metrics, setMetrics] = useState<{
         electricityUsage: number;
         waterConsumption: number;
@@ -271,6 +272,7 @@ const ResearchComponent = ({ team }: { team: any }) => {
     const handleSubmit = async () => {
         if (!query || selectedDocuments.length === 0) return;
 
+        setMetricsLoading(true);
         try {
             const calculatedMetrics = await calculateMetrics(
                 selectedDocuments,
@@ -284,6 +286,8 @@ const ResearchComponent = ({ team }: { team: any }) => {
         } catch (error) {
             console.error('Error calculating metrics:', error);
             setError(String(error));
+        } finally {
+            setMetricsLoading(false);
         }
     };
 
@@ -306,7 +310,7 @@ const ResearchComponent = ({ team }: { team: any }) => {
             const chunks = await response.json();
 
             chunks.forEach(chunk => {
-                console.log('Chunk metadata:', chunk.metadata); // Log the metadata structure
+                //console.log('Chunk metadata:', chunk.metadata); // Log the metadata structure
 
                 // Iterate over the metadata array directly
                 if (Array.isArray(chunk.metadata)) {
@@ -577,11 +581,17 @@ const ResearchComponent = ({ team }: { team: any }) => {
                                                                     <FileText className="h-4 w-4 text-slate-500" />
                                                                     <span className="text-sm font-medium">{t('Documents Selected')}</span>
                                                                 </div>
-                                                                <NumberTicker
-                                                                    value={selectedDocuments?.length || 0}
-                                                                    className="text-sm font-bold"
-                                                                    decimalPlaces={0}
-                                                                />
+                                                                <div className="flex items-center gap-1">
+                                                                    {metricsLoading ? (
+                                                                        <span className="loading loading-ring loading-sm text-slate-400"></span>
+                                                                    ) : (
+                                                                        <NumberTicker
+                                                                            value={selectedDocuments?.length || 0}
+                                                                            className="text-sm font-bold"
+                                                                            decimalPlaces={0}
+                                                                        />
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </TooltipTrigger>
                                                         <TooltipContent className="flex gap-3 p-3 max-w-xs bg-slate-200" onPointerEnter={(e) => e.preventDefault()}>
@@ -613,12 +623,18 @@ const ResearchComponent = ({ team }: { team: any }) => {
                                                                     <span className="text-sm font-medium">{t('Electricity Usage')}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-1">
-                                                                    <NumberTicker
-                                                                        value={metrics?.electricityUsage || 0}
-                                                                        className="text-sm font-bold"
-                                                                        decimalPlaces={2}
-                                                                    />
-                                                                    <span className="text-xs text-slate-500">kWh</span>
+                                                                    {metricsLoading ? (
+                                                                        <span className="loading loading-ring loading-sm text-slate-400"></span>
+                                                                    ) : (
+                                                                        <>
+                                                                            <NumberTicker
+                                                                                value={metrics?.electricityUsage || 0}
+                                                                                className="text-sm font-bold"
+                                                                                decimalPlaces={2}
+                                                                            />
+                                                                            <span className="text-xs text-slate-500">kWh</span>
+                                                                        </>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </TooltipTrigger>
@@ -636,13 +652,13 @@ const ResearchComponent = ({ team }: { team: any }) => {
                                                                 <p className="text-xs text-muted-foreground">
                                                                     {t('This represents the estimated amount of electricity consumed during the processing of your documents. We use this metric to track and optimize our environmental impact.')}
                                                                 </p>
-                                                                <a 
+                                                                <a
                                                                     href="https://www.washingtonpost.com/technology/2024/09/18/energy-ai-use-electricity-water-data-centers/"
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-800 underline mt-2"
                                                                 >
-                                                                    {t('Read More')} 
+                                                                    {t('Read More')}
                                                                     <ExternalLink size={12} />
                                                                 </a>
                                                             </div>
@@ -660,12 +676,18 @@ const ResearchComponent = ({ team }: { team: any }) => {
                                                                     <span className="text-sm font-medium">{t('Water Consumption')}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-1">
-                                                                    <NumberTicker
-                                                                        value={metrics?.waterConsumption || 0}
-                                                                        className="text-sm font-bold"
-                                                                        decimalPlaces={2}
-                                                                    />
-                                                                    <span className="text-xs text-slate-500">L</span>
+                                                                    {metricsLoading ? (
+                                                                        <span className="loading loading-ring loading-sm text-slate-400"></span>
+                                                                    ) : (
+                                                                        <>
+                                                                            <NumberTicker
+                                                                                value={metrics?.waterConsumption || 0}
+                                                                                className="text-sm font-bold"
+                                                                                decimalPlaces={2}
+                                                                            />
+                                                                            <span className="text-xs text-slate-500">L</span>
+                                                                        </>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </TooltipTrigger>
@@ -683,13 +705,13 @@ const ResearchComponent = ({ team }: { team: any }) => {
                                                                 <p className="text-xs text-muted-foreground">
                                                                     {t('The estimated water consumption for cooling the servers during document processing. This helps us monitor our water footprint.')}
                                                                 </p>
-                                                                <a 
+                                                                <a
                                                                     href="https://www.washingtonpost.com/technology/2024/09/18/energy-ai-use-electricity-water-data-centers/"
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-800 underline mt-2"
                                                                 >
-                                                                    {t('Read More')} 
+                                                                    {t('Read More')}
                                                                     <ExternalLink size={12} />
                                                                 </a>
                                                             </div>
@@ -706,11 +728,17 @@ const ResearchComponent = ({ team }: { team: any }) => {
                                                                     <Hash className="h-4 w-4 text-purple-500" />
                                                                     <span className="text-sm font-medium">{t('Total Tokens')}</span>
                                                                 </div>
-                                                                <NumberTicker
-                                                                    value={metrics?.totalTokens || 0}
-                                                                    className="text-sm font-bold"
-                                                                    decimalPlaces={0}
-                                                                />
+                                                                <div className="flex items-center gap-1">
+                                                                    {metricsLoading ? (
+                                                                        <span className="loading loading-ring loading-sm text-slate-400"></span>
+                                                                    ) : (
+                                                                        <NumberTicker
+                                                                            value={metrics?.totalTokens || 0}
+                                                                            className="text-sm font-bold"
+                                                                            decimalPlaces={0}
+                                                                        />
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </TooltipTrigger>
                                                         <TooltipContent className="flex gap-3 p-3 max-w-xs bg-slate-200" onPointerEnter={(e) => e.preventDefault()}>
@@ -742,12 +770,18 @@ const ResearchComponent = ({ team }: { team: any }) => {
                                                                     <span className="text-sm font-medium">{t('Processing Time')}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-1">
-                                                                    <NumberTicker
-                                                                        value={metrics?.processingTime || 0}
-                                                                        className="text-sm font-bold"
-                                                                        decimalPlaces={2}
-                                                                    />
-                                                                    <span className="text-xs text-slate-500">s</span>
+                                                                    {metricsLoading ? (
+                                                                        <span className="loading loading-ring loading-sm text-slate-400"></span>
+                                                                    ) : (
+                                                                        <>
+                                                                            <NumberTicker
+                                                                                value={metrics?.processingTime || 0}
+                                                                                className="text-sm font-bold"
+                                                                                decimalPlaces={2}
+                                                                            />
+                                                                            <span className="text-xs text-slate-500">s</span>
+                                                                        </>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </TooltipTrigger>
@@ -780,12 +814,18 @@ const ResearchComponent = ({ team }: { team: any }) => {
                                                                     <span className="text-sm font-medium">{t('LLM Cost')}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-1">
-                                                                    <span className="text-xs text-slate-500">$</span>
-                                                                    <NumberTicker
-                                                                        value={metrics?.totalCost || 0}
-                                                                        className="text-sm font-bold"
-                                                                        decimalPlaces={2}
-                                                                    />
+                                                                    {metricsLoading ? (
+                                                                        <span className="loading loading-ring loading-sm text-slate-400"></span>
+                                                                    ) : (
+                                                                        <>
+                                                                            <span className="text-xs text-slate-500">$</span>
+                                                                            <NumberTicker
+                                                                                value={metrics?.totalCost || 0}
+                                                                                className="text-sm font-bold"
+                                                                                decimalPlaces={2}
+                                                                            />
+                                                                        </>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </TooltipTrigger>
@@ -818,12 +858,18 @@ const ResearchComponent = ({ team }: { team: any }) => {
                                                                     <span className="text-sm font-medium">{t('Recycled Data')}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-1">
-                                                                    <NumberTicker
-                                                                        value={metrics?.recycledDataPercentage || 0}
-                                                                        className="text-sm font-bold"
-                                                                        decimalPlaces={2}
-                                                                    />
-                                                                    <span className="text-xs text-slate-500">%</span>
+                                                                    {metricsLoading ? (
+                                                                        <span className="loading loading-ring loading-sm text-slate-400"></span>
+                                                                    ) : (
+                                                                        <>
+                                                                            <NumberTicker
+                                                                                value={metrics?.recycledDataPercentage || 0}
+                                                                                className="text-sm font-bold"
+                                                                                decimalPlaces={2}
+                                                                            />
+                                                                            <span className="text-xs text-slate-500">%</span>
+                                                                        </>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </TooltipTrigger>
