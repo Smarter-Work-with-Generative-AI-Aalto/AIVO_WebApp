@@ -47,9 +47,6 @@ const ResearchComponent = ({ team }: { team: any }) => {
     const [loading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [overallQuery, setOverallQuery] = useState('');
-    const [isCollapsed, setIsCollapsed] = useState(true);
-    const [isTooltipOpen, setIsTooltipOpen] = useState(false);
-    const [isTooltipTwoOpen, setIsTooltipTwoOpen] = useState(false);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     // const { data: session, status } = useSession(); // Hook from next-auth to get the session
     // const [userId, setUserId] = useState<string | null>(null);
@@ -407,7 +404,7 @@ const ResearchComponent = ({ team }: { team: any }) => {
             <div className="p-4">
                 <div className="card w-full border-rounded bg-neutral-100 mb-4 mt-4">
                     <Card.Body>
-                        <h2 className="text-xl font-semibold">{t('research-step-one')}
+                        {/* <h2 className="text-xl font-semibold">{t('research-step-one')}
                             <div className="relative inline-block">
                                 <span
                                     className="cursor-pointer text-xs bg-base-200 px-2 py-1 rounded-full z-1000 ml-2"
@@ -421,6 +418,34 @@ const ResearchComponent = ({ team }: { team: any }) => {
                                     </div>
                                 )}
                             </div>
+                        </h2> */}
+                        <h2 className="text-xl font-semibold">
+                            {t('research-step-one')}
+                            <TooltipProvider delayDuration={0}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="cursor-pointer text-xs bg-base-200 px-2 py-1 rounded-full z-1000 ml-2">
+                                            ?
+                                        </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="flex gap-3 p-3 max-w-xs bg-slate-200" onPointerEnter={(e) => e.preventDefault()}>
+                                        <Info
+                                            className="mt-0.5 shrink-0 text-slate-400"
+                                            size={16}
+                                            strokeWidth={2}
+                                            aria-hidden="true"
+                                        />
+                                        <div className="space-y-1">
+                                            <p className="text-[13px] font-medium">
+                                                {t('Research Query')}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {t('step-one-tooltip')}
+                                            </p>
+                                        </div>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </h2>
                         <div>
                             <Command className="rounded-lg border shadow-md w-full bg-white">
@@ -518,7 +543,7 @@ const ResearchComponent = ({ team }: { team: any }) => {
                     <input type="checkbox" />
                     <div className="collapse-title badge-neutral-100 text-sm font-medium">{t('Optional Settings')}</div>
                     <div className="collapse-content">
-                        <h2 className="text-xl font-semibold mb-2 mt-4">{t('research-step-three')}
+                        {/* <h2 className="text-xl font-semibold mb-2 mt-4">{t('research-step-three')}
                             <div className="relative inline-block">
                                 <span
                                     className="cursor-pointer text-xs bg-base-200 px-2 py-1 rounded-full ml-2"
@@ -532,6 +557,34 @@ const ResearchComponent = ({ team }: { team: any }) => {
                                     </div>
                                 )}
                             </div>
+                        </h2> */}
+                        <h2 className="text-xl font-semibold mb-2 mt-4">
+                            {t('research-step-three')}
+                            <TooltipProvider delayDuration={0}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="cursor-pointer text-xs bg-base-200 px-2 py-1 rounded-full ml-2">
+                                            ?
+                                        </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="flex gap-3 p-3 max-w-xs bg-slate-200" onPointerEnter={(e) => e.preventDefault()}>
+                                        <Info
+                                            className="mt-0.5 shrink-0 text-slate-400"
+                                            size={16}
+                                            strokeWidth={2}
+                                            aria-hidden="true"
+                                        />
+                                        <div className="space-y-1">
+                                            <p className="text-[13px] font-medium">
+                                                {t('Overall Query')}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {t('step-three-tooltip')}
+                                            </p>
+                                        </div>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </h2>
                         <label className="input input-bordered flex items-center gap-2 rounded-full">
                             <input
